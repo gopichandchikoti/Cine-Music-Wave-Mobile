@@ -1,0 +1,16 @@
+node_modules/
+.expo/
+.env*
+android/
+ios/
+*.keystore
+*.p12
+*.mobileprovision
+*.jks
+validation/
+artifacts/
+fixtures-private/
+*.log
+**/build/
+**/.gradle/
+**/.cxx/

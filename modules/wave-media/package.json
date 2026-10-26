@@ -1,0 +1,1 @@
+{ "name": "wave-media", "version": "0.2.0", "private": true, "main": "index.ts", "description": "Cine Music Wave on-device media adapter (MediaStore on Android, Files/Photos on iOS)", "license": "UNLICENSED" }

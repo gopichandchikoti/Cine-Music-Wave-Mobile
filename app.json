@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "Cine Music Wave",
+    "slug": "cine-music-wave-mobile",
+    "scheme": "cinemusicwave",
+    "version": "0.2.0",
+    "orientation": "default",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#090a10",
+    "icon": "./assets/icon.png",
+    "newArchEnabled": true,
+    "updates": { "enabled": false },
+    "ios": {
+      "bundleIdentifier": "com.cinemusicwave.mobile",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Cine Music Wave plays videos you choose from your photo library, on this device only.",
+        "NSAppleMusicUsageDescription": "Cine Music Wave plays music you own from your Music library, on this device only.",
+        "UIBackgroundModes": ["audio"]
+      }
+    },
+    "android": {
+      "package": "com.cinemusicwave.mobile",
+      "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#090a10" },
+      "permissions": [
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.READ_EXTERNAL_STORAGE"
+      ],
+      "blockedPermissions": ["android.permission.RECORD_AUDIO", "android.permission.CAMERA", "android.permission.SYSTEM_ALERT_WINDOW"]
+    },
+    "plugins": [
+      "expo-font",
+      ["expo-audio", { "microphonePermission": false, "enableBackgroundPlayback": true, "enableBackgroundRecording": false }],
+      ["expo-video", { "supportsBackgroundPlayback": true, "supportsPictureInPicture": true }],
+      "expo-sqlite",
+      "./plugins/withOffline.js"
+    ]
+  }
+}

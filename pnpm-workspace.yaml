@@ -1,0 +1,4 @@
+allowBuilds:
+  esbuild: true
+# pnpm 11 reads install settings from this file, not .npmrc. A hoisted layout keeps generated native build paths short (Windows' 260 character limit).
+nodeLinker: hoisted

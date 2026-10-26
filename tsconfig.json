@@ -1,0 +1,5 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": { "strict": true, "types": ["react", "node"], "ignoreDeprecations": "6.0" },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "App.tsx", "index.ts", "modules/**/*.ts", "tests/**/*.ts"]
+}
