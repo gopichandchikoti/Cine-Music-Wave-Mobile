@@ -68,12 +68,13 @@ The only platform that has been run is Android (emulator `CineMusicWave_TestPhon
 | --- | --- | --- |
 | Home: mood chips, Speed dial, Listen again, Quick picks, Made for you (daily mixes) | Checked (Speed dial, Listen again, Quick picks, mood chips). Built (Made for you, mood pages, daily mix pages) | Energise and Workout use title and tempo-tag rules because loudness is not analysed (see below). |
 | Search with filters (artist, album, language, genre, year, liked) | Checked (page layout). Built (filter combinations) | |
-| Library tabs: Playlists, Albums & films, Singers, Songs, Radios; filter box and sort | Checked (Playlists tab, layout of the others). Built (sorts and filtering) | |
-| Album, singer, mix and mood pages | Checked (album). Built (singer, mix, mood) | |
+| Library: All overview (Playlists, Recently added, On repeat, Singers shelves) and the sections Playlists, Albums & films, Singers, Songs, Radios as section buttons; filter box and sort | Checked (All overview, section buttons, layout). Built (the other sections' sorts and filtering, since the new buttons) | Different from the web: the web has tabs and no overview. Owner-requested (2026-10-26). |
+| Album, singer, mix and mood pages | Checked (album with and without a cover, singer). Built (mix, mood) | On phones the album and singer pages are full-bleed, picture-tinted pages (Different from the web, owner-requested); wide layouts keep the web's headers. The singer page's star saves the singer's radio. |
 | Liking a song and the Liked Songs playlist | Checked (like, and the Liked Songs tile with its count) | |
 | Playlists: create, rename inline, add songs from the track menu, reorder by drag handle, delete with confirmation, mosaic cover | Checked | Create, rename, add, reorder and delete all worked, and the playlist and its order survived an app restart. |
 | Track menu (play next, add to queue, add to playlist, like, start radio, go to album, go to singer) | Checked (menu, add to playlist, like). Built (the rest) | |
-| Mini player and the tab bar (compact); sidebar and player bar (wide) | Checked | |
+| Mini player and the dock (compact); sidebar and player bar (wide) | Checked | Different from the web: on phones the bottom tab bar is replaced by a floating dock (Home and Your Library button, mini player pill, Search button). Owner-requested (2026-10-26). |
+| Dark and light theme for Music and Watch | Checked | Not in the web app. Account menu or Settings, Theme; kept on the phone; default dark; sign-in stays dark; Watch's player and title page stay dark. Following the phone's setting: Not available. |
 | Now Playing: cover tint from the song, seek bar, transport, like, shuffle, repeat, volume | Checked (layout, tint, transport, like). Built (shuffle and repeat modes) | |
 | Up next (queue) sheet with reorder, remove and clear | Checked (sheet). Built (reorder inside it) | |
 | Lyrics sheet | Checked (sheet and empty state) | Only lyrics inside the file are read (USLT). The web also reads `.lrc` files beside the song: Not available. |
@@ -93,6 +94,7 @@ The only platform that has been run is Android (emulator `CineMusicWave_TestPhon
 3. **Poster sources, subtitles and lyrics** come from the files themselves (see above).
 4. **Lock-screen buttons** are seek buttons, not next/previous.
 5. **Fonts** (DM Sans, DM Mono, Fraunces) and icons (lucide) are bundled, not fetched.
+6. **Owner-requested redesign (2026-10-26).** A light theme, the phone dock, the full-bleed singer and album pages and the Library overview do not exist in the web app. Music Moments (a friends feed) is Not available: it needs accounts and a server.
 
 ## Not done in this delivery
 

@@ -35,6 +35,7 @@ CSS ported by hand, value for value (hashes of the web files): `Music.css` `b911
 - **Login**: "Skip Login / Continue offline as Chendu" is added at the bottom; Sign in, providers and Create an account are disabled with an explanation.
 - **Glass**: the web blurs with `backdrop-filter: blur() saturate(1.9) brightness(1.06)`. Android's blur has no saturate/brightness, so panes over very colourful content look a little less vivid.
 - **Fonts**: DM Sans, DM Mono and Fraunces are bundled (`@expo-google-fonts/*`) instead of fetched from Google Fonts. The login brand name uses Fraunces (the web falls back to Georgia/serif there).
+- **Owner-requested redesign (2026-10-26), not in the web app**: a light theme for Music and Watch (the dark theme is the web's, unchanged); on phones, a floating dock (Home and Your Library button, mini player pill, Search button) instead of the bottom tab bar; full-bleed singer and film pages with a picture-tinted page; Your Library with section buttons and an All overview of shelves. Wide layouts keep the web's structure. Details in `system_design.md`.
 - **Not ported because a phone has no server for them**: server-side ffmpeg playback plans, audio-sync delay, sound-check meter, preview clips, hover cards, keyboard shortcuts. See `FEATURE_PARITY.md`.
 
 ## Tool and dependency versions

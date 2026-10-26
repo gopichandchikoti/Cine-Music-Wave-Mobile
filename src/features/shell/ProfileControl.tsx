@@ -4,8 +4,9 @@ import { Modal, ScrollView, useWindowDimensions, View } from 'react-native';
 import { content as copy } from '../../core/content';
 import { useLibrary } from '../../data/LibraryProvider';
 import { useSession } from '../../data/session';
+import { useTheme } from '../../data/theme';
 import { Press } from '../../design/primitives';
-import { GREETING_HIDDEN_MAX, paper as P } from '../../design/tokens';
+import { GREETING_HIDDEN_MAX, music as M, paper as P, theme, watch as W } from '../../design/tokens';
 import { Txt } from '../../design/Txt';
 import { openSettings } from '../../platform/permissions';
 
@@ -34,8 +35,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
  * The account chip in the top right: avatar, greeting (wide screens) and a menu. In this offline delivery it shows the device-local
  * profile; "Return to login" replaces "Sign out" and never deletes anything.
  */
-export function ProfileControl() {
+export function ProfileControl({ tone = 'music' }: { tone?: 'music' | 'watch' }) {
   const session = useSession();
+  const colour = useTheme();
   const account = useContext(AccountContext);
   const [open, setOpen] = useState(false);
   const [box, setBox] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
@@ -47,15 +49,21 @@ export function ProfileControl() {
   const name = session.profile.name;
   const show = (): void => trigger.current?.measureInWindow((x, y, width, height) => { setBox({ x, y, width, height }); setOpen(true); });
   const choose = (action: () => void) => (): void => { setOpen(false); action(); };
+  // The dark chip is the approved look; in the light theme it takes the colours of the screen it sits on.
+  const chip = theme.mode === 'dark'
+    ? { border: P.line, fill: P.raised, avatar: P.tealSoft, initials: P.teal, ink: P.ink }
+    : tone === 'watch'
+      ? { border: W.line, fill: W.field, avatar: W.chip, initials: W.accent, ink: W.ink }
+      : { border: M.line, fill: M.surface, avatar: M.surfaceHover, initials: M.accent, ink: M.ink };
   return <View>
     <View ref={trigger} collapsable={false}>
       <Press onPress={show} label={`${greeting(hour)}, ${name}. ${t.yourAccount}`} expanded={open} hint="Opens the account menu"
-        style={{ minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 9, borderWidth: 1, borderColor: P.line, backgroundColor: P.raised }}>
-        <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: P.tealSoft }}>
-          <Txt size={11} weight={700} color={P.teal}>{initialsOf(name)}</Txt>
+        style={{ minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 9, borderWidth: 1, borderColor: chip.border, backgroundColor: chip.fill }}>
+        <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: chip.avatar }}>
+          <Txt size={11} weight={700} color={chip.initials}>{initialsOf(name)}</Txt>
         </View>
-        {showGreeting ? <Txt size={12} color={P.ink}>{greeting(hour)}{t.text}{name}</Txt> : null}
-        <ChevronDown size={14} color={P.ink} />
+        {showGreeting ? <Txt size={12} color={chip.ink}>{greeting(hour)}{t.text}{name}</Txt> : null}
+        <ChevronDown size={14} color={chip.ink} />
       </Press>
     </View>
     <Modal transparent visible={open} animationType="fade" statusBarTranslucent onRequestClose={() => setOpen(false)}>
@@ -65,6 +73,7 @@ export function ProfileControl() {
           {[
             { label: t.myProfile, action: () => account.open('profile') },
             { label: t.settings, action: () => account.open('settings') },
+            { label: colour.mode === 'light' ? t.switchToDark : t.switchToLight, action: colour.toggle },
             { label: 'Return to login', action: () => { void session.returnToLogin(); } },
           ].map((item) => <Press key={item.label} role="menuitem" label={item.label} onPress={choose(item.action)} pressedStyle={{ backgroundColor: P.tealSoft }} style={{ minHeight: 44, justifyContent: 'center', padding: 9, borderRadius: 5 }}>
             <Txt size={16} color={P.ink}>{item.label}</Txt>
@@ -79,6 +88,20 @@ function Row({ icon: Icon, label, onPress }: { icon: React.ComponentType<{ size?
   return <Press onPress={onPress} label={label} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7, paddingHorizontal: 12, borderWidth: 1, borderColor: P.lineStrong, borderRadius: 7, backgroundColor: P.paper }}>
     <Icon size={17} color={P.ink} /><Txt size={14} color={P.ink}>{label}</Txt>
   </Press>;
+}
+
+/** Dark or light, as two choices side by side; the picked one is outlined. */
+function ThemeChoice() {
+  const { mode, setMode } = useTheme();
+  return <View accessibilityRole="radiogroup" accessibilityLabel={copy.settingsView.theme} style={{ flexDirection: 'row', gap: 10 }}>
+    {([['dark', copy.settingsView.dark], ['light', copy.settingsView.light]] as const).map(([value, label]) => {
+      const on = mode === value;
+      return <Press key={value} role="radio" checked={on} label={label} onPress={() => setMode(value)}
+        style={{ flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderWidth: on ? 2 : 1, borderColor: on ? P.teal : P.lineStrong, borderRadius: 7, backgroundColor: on ? P.tealSoft : P.paper }}>
+        <Txt size={14} weight={on ? 700 : 400} color={P.ink}>{label}</Txt>
+      </Press>;
+    })}
+  </View>;
 }
 
 const stateText = { unknown: 'Not checked yet', granted: 'Allowed: music and videos', partial: 'Partly allowed', denied: 'Not allowed yet', blocked: 'Turned off in Android settings' } as const;
@@ -120,8 +143,9 @@ function Dialog({ panel, onClose }: { panel: Exclude<Panel, null>; onClose: () =
               <Row icon={FolderOpen} label="Add a folder" onPress={() => { void library.pick(true); }} />
               <Row icon={RefreshCw} label="Refresh library" onPress={() => { void library.rescan(); }} />
             </View>
-            <Txt size={15} weight={700} color={P.ink} style={{ marginTop: 6 }}>Display</Txt>
-            <Txt size={13} lh={1.6} color={P.muted}>Theme: dark (the same as the web app). Text follows your phone's font size, up to a comfortable limit.</Txt>
+            <Txt size={15} weight={700} color={P.ink} style={{ marginTop: 6 }}>{copy.settingsView.theme}</Txt>
+            <ThemeChoice />
+            <Txt size={13} lh={1.6} color={P.muted}>{copy.settingsView.themeHint} Text follows your phone's font size, up to a comfortable limit.</Txt>
             <Txt size={15} weight={700} color={P.ink} style={{ marginTop: 6 }}>Offline delivery</Txt>
             <Txt size={13} lh={1.6} color={P.muted}>This build has no network permission. Online sign-in, sync and remote libraries are planned for later.</Txt>
           </>}

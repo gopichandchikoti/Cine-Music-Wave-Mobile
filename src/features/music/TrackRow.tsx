@@ -1,6 +1,6 @@
 import { Ellipsis, Heart, X } from 'lucide-react-native';
 import { useRef, type ComponentRef } from 'react';
-import { View, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
 import { content as copy, formatContent } from '../../core/content';
 import { artistLine, formatTime } from '../../core/musicModel';
 import type { MusicTrack } from '../../core/musicTypes';
@@ -44,11 +44,17 @@ type TrackRowProps = {
   past?: boolean;
   /** compact queue layout: no number column */
   queue?: boolean;
+  /** the line under the title, when it should not be the singers */
+  subtitle?: string;
+  /** a hairline under the row, starting after the cover */
+  divider?: boolean;
+  /** no number column: the cover starts at the left edge (a playing song still shows its bars there) */
+  flush?: boolean;
   style?: ViewStyle;
 };
 
 /** One song in a list: play it, like it, open its menu, and (in the queue and in playlists) drag it to a new place. */
-export function TrackRow({ track, number, showAlbum = true, showCover = true, source, onPlay, onRemove, sortable, position = 0, current, past = false, queue = false, style }: TrackRowProps) {
+export function TrackRow({ track, number, showAlbum = true, showCover = true, source, onPlay, onRemove, sortable, position = 0, current, past = false, queue = false, subtitle, divider = false, flush = false, style }: TrackRowProps) {
   const music = useMusic();
   const nav = useMusicNav();
   const isCurrent = current ?? music.track?.id === track.id;
@@ -59,13 +65,13 @@ export function TrackRow({ track, number, showAlbum = true, showCover = true, so
     onLayout={position === 0 && sortable ? (event) => sortable.measureRow(event.nativeEvent.layout.height) : undefined}
     style={[{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 6, borderRadius: 12 }, isCurrent ? { backgroundColor: M.surfaceHover } : null, past ? { opacity: 0.55 } : null, sortable?.rowStyle(position), dragging ? { zIndex: 5 } : null, style]}>
     <Press onPress={onPlay} label={formatContent(t.playSong, { title: track.title })} style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: compact ? 8 : 10, padding: 4, borderRadius: 10 }}>
-      {!queue ? <View style={{ width: compact ? 26 : 34, height: 24, alignItems: 'center', justifyContent: 'center' }}>
+      {!queue && !(flush && !isCurrent && number === undefined) ? <View style={{ width: compact ? 26 : 34, height: 24, alignItems: 'center', justifyContent: 'center' }}>
         {isCurrent ? <Equalizer paused={!music.playing} /> : number !== undefined ? <Txt size={14} color={M.muted} num>{number}</Txt> : null}
       </View> : null}
       {showCover ? <View style={{ width: 46 }}><Cover albumId={track.albumId} cover={track.cover} label={track.album} radius={6} maxPx={160} /></View> : null}
       <View style={{ flex: compact ? 1 : 1.4, minWidth: 0, gap: 2 }}>
         <Txt size={15} weight={600} lines={1} color={isCurrent ? M.accent : M.ink}>{track.title}</Txt>
-        <Txt size={13} color={M.muted} lines={1}>{artistLine(track) || track.album}</Txt>
+        <Txt size={13} color={M.muted} lines={1}>{subtitle ?? (artistLine(track) || track.album)}</Txt>
       </View>
       {!compact && showAlbum ? <Txt size={13} color={M.muted} lines={1} style={{ flex: 1 }}>{track.album}{track.year ? ` · ${track.year}` : ''}</Txt> : null}
     </Press>
@@ -74,6 +80,7 @@ export function TrackRow({ track, number, showAlbum = true, showCover = true, so
     {onRemove ? <IconButton icon={X} label={t.removeFromQueue} onPress={onRemove} iconSize={18} /> : null}
     <MenuButton trackIds={[track.id]} source={source} label={formatContent(t.moreFor, { title: track.title })} />
     {sortable ? <DragHandle index={position} sortable={sortable} label={t.reorder} /> : null}
+    {divider ? <View pointerEvents="none" style={{ position: 'absolute', left: flush ? 62 : 70, right: 6, bottom: 0, height: StyleSheet.hairlineWidth, backgroundColor: M.line }} /> : null}
   </View>;
 }
 

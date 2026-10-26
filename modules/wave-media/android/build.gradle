@@ -1,0 +1,11 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.cinemusicwave.media'
+version = '0.2.0'
+
+android {
+  namespace 'com.cinemusicwave.media'
+}

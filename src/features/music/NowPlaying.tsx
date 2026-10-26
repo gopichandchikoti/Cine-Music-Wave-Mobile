@@ -4,12 +4,13 @@ import { Animated, Image, PanResponder, StyleSheet, useWindowDimensions, View } 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { content as copy, formatContent } from '../../core/content';
 import { keyOf } from '../../core/musicModel';
+import { Dither } from '../../design/Dither';
 import { BlurLayer, Glass } from '../../design/Glass';
 import { Presence, usePresencePhase, useSpringEnterExit } from '../../design/Presence';
 import { Press } from '../../design/primitives';
 import { SlidingTabs } from '../../design/SlidingTabs';
 import { between, opacityOf } from '../../design/spring';
-import { clamp, music as M } from '../../design/tokens';
+import { clamp, inkAlpha, music as M, theme } from '../../design/tokens';
 import { Txt } from '../../design/Txt';
 import Wave from '../../../modules/wave-media';
 import { useArt } from '../../platform/artwork';
@@ -52,8 +53,9 @@ function useDominantColor(albumId: string | null): readonly [number, number, num
 /** A small round glass button (web: .glass-button). */
 function GlassButton({ icon, label, onPress }: { icon: ComponentType<{ size?: number; color?: string }>; label: string; onPress: () => void }) {
   const Icon = icon;
+  const light = theme.mode === 'light';
   return <Press onPress={onPress} label={label} pressScale={0.92} style={{ width: 44, height: 44 }}>
-    <Glass radius={22} alphas={[0.12, 0.12, 0.12]} border="rgba(255, 255, 255, 0.18)" rim={0.3} glow={false} shadow={false} blur={14} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+    <Glass radius={22} tint={light ? [20, 21, 31] : undefined} alphas={light ? [0.07, 0.07, 0.07] : [0.12, 0.12, 0.12]} border={inkAlpha(light ? 0.12 : 0.18)} rim={0.3} glow={false} shadow={false} blur={14} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
       <Icon size={24} color={M.muted} />
     </Glass>
   </Press>;
@@ -72,7 +74,7 @@ export function NowPlaying() {
   const leaving = usePresencePhase() === 'exit';
   useSpringEnterExit(rise, 'smooth');
   if (!track) return null;
-  return <Animated.View pointerEvents={leaving ? 'none' : 'auto'} style={[StyleSheet.absoluteFill, { zIndex: 80, backgroundColor: '#07070b', opacity: opacityOf(rise), transform: [{ translateY: between(rise, RISE_FROM, 0) }] }]}>
+  return <Animated.View pointerEvents={leaving ? 'none' : 'auto'} style={[StyleSheet.absoluteFill, { zIndex: 80, backgroundColor: M.stage, opacity: opacityOf(rise), transform: [{ translateY: between(rise, RISE_FROM, 0) }] }]}>
     <OverlayProvider>
       <BlurLayer overlay={<><NowContent /><OverlayOutlet /></>}>
         <Backdrop albumId={track.albumId} hasCover={track.cover} tint={tint} />
@@ -84,8 +86,10 @@ export function NowPlaying() {
 function Backdrop({ albumId, hasCover, tint }: { albumId: string; hasCover: boolean; tint: readonly [number, number, number] }) {
   const uri = useArt(hasCover ? `cover:${albumId}` : null, null);
   const { width, height } = useWindowDimensions();
-  return <View style={[StyleSheet.absoluteFill, { overflow: 'hidden', backgroundImage: `linear-gradient(165deg, rgba(${tint.join(', ')}, 0.95), #07070b 72%)` }]}>
-    {uri ? <Image source={{ uri }} resizeMode="cover" style={{ position: 'absolute', left: -width * 0.25, top: -height * 0.25, width: width * 1.5, height: height * 1.5, opacity: 0.5, filter: [{ blur: 80 }, { saturate: 1.7 }] }} /> : null}
+  const light = theme.mode === 'light';
+  return <View style={[StyleSheet.absoluteFill, { overflow: 'hidden', backgroundImage: `linear-gradient(165deg, rgba(${tint.join(', ')}, ${light ? 0.5 : 0.95}), ${M.stage} 72%)` }]}>
+    {uri ? <Image source={{ uri }} resizeMode="cover" style={{ position: 'absolute', left: -width * 0.25, top: -height * 0.25, width: width * 1.5, height: height * 1.5, opacity: light ? 0.32 : 0.5, filter: [{ blur: 80 }, { saturate: 1.7 }] }} /> : null}
+    <Dither />
   </View>;
 }
 
@@ -116,18 +120,18 @@ function NowContent() {
   const sheetStage = sheetOpen;
   const titleSize = sheetStage ? 18 : clamp(22, width * 0.046, 30);
   const artists = track.artists.length === 0
-    ? <Txt size={sheetStage ? 14 : 16} color="rgba(255, 255, 255, 0.78)" lines={1}>{t.unknownSinger}</Txt>
-    : <Txt size={sheetStage ? 14 : 16} color="rgba(255, 255, 255, 0.78)" lines={1}>{track.artists.map((name, position) => <Txt key={name} size={sheetStage ? 14 : 16} color="rgba(255, 255, 255, 0.78)" onPress={() => { music.setExpanded(false); nav.go({ page: 'artist', key: keyOf(name) }); }}>{position > 0 ? ', ' : ''}{name}</Txt>)}</Txt>;
+    ? <Txt size={sheetStage ? 14 : 16} color={inkAlpha(0.78)} lines={1}>{t.unknownSinger}</Txt>
+    : <Txt size={sheetStage ? 14 : 16} color={inkAlpha(0.78)} lines={1}>{track.artists.map((name, position) => <Txt key={name} size={sheetStage ? 14 : 16} color={inkAlpha(0.78)} onPress={() => { music.setExpanded(false); nav.go({ page: 'artist', key: keyOf(name) }); }}>{position > 0 ? ', ' : ''}{name}</Txt>)}</Txt>;
   const tabs = <Glass radius={999} style={{ marginTop: 8, marginHorizontal: 12, marginBottom: Math.max(12, insets.bottom + 10), padding: 6, alignSelf: 'center', width: Math.min(520, width - 24) }}>
-    <SlidingTabs count={TABS.length} index={TABS.findIndex((tab) => tab.id === music.sheet)} gap={6} color="#fff" radius={999}>
+    <SlidingTabs count={TABS.length} index={TABS.findIndex((tab) => tab.id === music.sheet)} gap={6} color={M.solid} radius={999}>
       {TABS.map((tab) => {
         const on = music.sheet === tab.id;
         const count = music.queue.items.length - music.queue.index - 1;
         return <Press key={tab.id} onPress={() => music.setSheet(on ? null : tab.id)} label={tab.label} selected={on} role="tab"
           style={{ flex: 1, minHeight: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: narrow ? 5 : 6, paddingHorizontal: narrow ? 6 : 8, borderRadius: 999 }}>
-          <tab.icon size={16} color={on ? '#1a0610' : 'rgba(255, 255, 255, 0.75)'} />
-          <Txt size={narrow ? 13 : 14} weight={700} color={on ? '#1a0610' : 'rgba(255, 255, 255, 0.75)'} lines={1}>{tab.label}</Txt>
-          {tab.id === 'queue' && count > 0 ? <View style={{ minWidth: narrow ? 18 : 20, paddingHorizontal: narrow ? 5 : 6, borderRadius: 99, backgroundColor: on ? '#1a0610' : M.ink }}><Txt size={narrow ? 10 : 11} weight={800} color={on ? '#fff' : M.accentInk}>{count}</Txt></View> : null}
+          <tab.icon size={16} color={on ? M.accentInk : inkAlpha(0.75)} />
+          <Txt size={narrow ? 13 : 14} weight={700} color={on ? M.accentInk : inkAlpha(0.75)} lines={1}>{tab.label}</Txt>
+          {tab.id === 'queue' && count > 0 ? <View style={{ minWidth: narrow ? 18 : 20, paddingHorizontal: narrow ? 5 : 6, borderRadius: 99, backgroundColor: on ? M.accentInk : M.ink }}><Txt size={narrow ? 10 : 11} weight={800} color={on ? M.solid : M.accentInk}>{count}</Txt></View> : null}
         </Press>;
       })}
     </SlidingTabs>
@@ -137,7 +141,7 @@ function NowContent() {
     <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
       <Txt size={titleSize} weight={800} ls={-0.02} lines={1} accessibilityRole="header">{track.title}</Txt>
       {artists}
-      {!sheetStage ? <Txt size={14} color="rgba(255, 255, 255, 0.6)" lines={1}><Txt size={14} color="rgba(255, 255, 255, 0.6)" onPress={() => { music.setExpanded(false); nav.go({ page: 'album', id: track.albumId }); }}>{track.album}</Txt>{track.year ? ` · ${track.year}` : ''}</Txt> : null}
+      {!sheetStage ? <Txt size={14} color={inkAlpha(0.6)} lines={1}><Txt size={14} color={inkAlpha(0.6)} onPress={() => { music.setExpanded(false); nav.go({ page: 'album', id: track.albumId }); }}>{track.album}</Txt>{track.year ? ` · ${track.year}` : ''}</Txt> : null}
     </View>
     <LikeButton trackId={track.id} size={26} />
   </View>;
@@ -146,7 +150,7 @@ function NowContent() {
     <View {...grab.panHandlers} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: insets.top + 10, paddingHorizontal: 14, paddingBottom: 6 }}>
       <GlassButton icon={ChevronDown} label={t.minimize} onPress={closeNow} />
       <View style={{ flex: 1, minWidth: 0, alignItems: 'center' }}>
-        <Txt family="mono" weight={500} size={10} ls={0.14} upper color="rgba(255, 255, 255, 0.7)" lines={1}>{music.context?.kind === 'radio' ? t.radioPlaying : t.playingFromLabel}</Txt>
+        <Txt family="mono" weight={500} size={10} ls={0.14} upper color={inkAlpha(0.7)} lines={1}>{music.context?.kind === 'radio' ? t.radioPlaying : t.playingFromLabel}</Txt>
         <Txt size={14} weight={700} lines={1} style={{ marginTop: 4 }}>{music.context?.label ?? t.yourQueue}</Txt>
       </View>
       <MoreButton trackId={track.id} />
@@ -155,7 +159,7 @@ function NowContent() {
     {sheetStage ? <>
       <View style={{ width: '100%', maxWidth: 760, alignSelf: 'center', paddingHorizontal: side, paddingTop: 2, gap: 4 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View style={{ width: 56, boxShadow: '0 8px 20px rgba(0, 0, 0, 0.5)', borderRadius: 10 }}><Cover albumId={track.albumId} cover={track.cover} label={track.album} radius={10} maxPx={240} /></View>
+          <View style={{ width: 56, boxShadow: M.shadowThumb, borderRadius: 10 }}><Cover albumId={track.albumId} cover={track.cover} label={track.album} radius={10} maxPx={240} /></View>
           <View style={{ flex: 1, minWidth: 0 }}>{meta}</View>
         </View>
         <SeekBar />
@@ -164,14 +168,14 @@ function NowContent() {
       <View style={{ flex: 1, minHeight: 0, width: Math.min(760, width - 20), alignSelf: 'center', marginTop: 4 }}>
         <Glass radius={26} style={{ flex: 1 }}>
           <Press onPress={() => music.setSheet(null)} label={t.closeSheet} style={{ height: 22, alignItems: 'center', justifyContent: 'center' }}>
-            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255, 255, 255, 0.4)' }} />
+            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: inkAlpha(0.4) }} />
           </Press>
           {music.sheet === 'queue' ? <QueueSheet /> : music.sheet === 'lyrics' ? <LyricsSheet /> : <RelatedSheet />}
         </Glass>
       </View>
     </> : <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
       <View style={{ width: Math.min(560, width), paddingHorizontal: side, alignItems: 'center', gap }}>
-        <View style={{ width: art, borderRadius: 18, boxShadow: '0 30px 80px rgba(0, 0, 0, 0.6)' }}><Cover albumId={track.albumId} cover={track.cover} label={track.album} radius={18} /></View>
+        <View style={{ width: art, borderRadius: 18, boxShadow: M.shadowArt }}><Cover albumId={track.albumId} cover={track.cover} label={track.album} radius={18} /></View>
         {meta}
         <View style={{ width: '100%', paddingHorizontal: 2 }}><SeekBar /></View>
         <Transport large />

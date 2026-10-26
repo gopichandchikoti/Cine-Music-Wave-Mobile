@@ -44,9 +44,10 @@ Online accounts and sync (`docs/FUTURE_ONLINE_BACKEND_PLAN.md`), iOS build and d
 
 ## Design record and motion (2026-10-26)
 
-This is the design record that `AGENTS.md` (UI-01) requires. The look is the web app's and is frozen: tokens in
+This is the design record that `AGENTS.md` (UI-01) requires. The dark look is the web app's and is frozen: tokens in
 `src/design/tokens.ts` are copied value for value from `Cine Music Wave Web` (see `SOURCE_REFERENCE.md` for the deliberate
-differences). Do not restyle for "native feel".
+differences). Do not restyle for "native feel". The owner has since approved a light theme and the new Music screens; those are
+recorded in the next section and the dark theme itself did not change.
 
 - **Palette.** As on the web: the dark paper palette for sign-in and the profile menu, a dark and colourful Music palette
   (`#090a10` background, `#ff5c8a` accent) and an all-green Watch palette (`#03110a` background, `#34e58a` accent). Measured
@@ -65,3 +66,57 @@ differences). Do not restyle for "native feel".
 - **Not done.** Dragging the player down with the finger does not yet hand its release speed to the spring (UI-23); the existing
   swipe closes it past a distance threshold and the exit then plays. Watch's section tabs scroll sideways at different widths, so
   they do not have a sliding highlight.
+
+## Themes and the new Music screens (2026-10-26)
+
+The owner asked for a dark and light switch for Music and Watch and for new Music screens (floating dock, Library with section
+buttons, immersive singer and film pages). This departs from "look like the web app" on purpose and by request; the dark theme is
+unchanged (`tests/theme.test.ts` pins its values).
+
+- **Themes.** `music`, `watch` and `glass` in `src/design/tokens.ts` are live objects. `applyTheme(mode)` copies the dark or light
+  palette into them before the tree renders (`useAppliedTheme` in `src/data/theme.tsx`, called from `Gate`), every component reads
+  them while it renders, and a change of choice re-renders the tree from `Gate` without remounting anything (playback, scroll and
+  the queue survive). Never read a token at module load (that captures one theme); use a function or read it in render. The one
+  `memo` (`TitleCard`) takes a `scheme` prop so it redraws. The choice lives in `app_kv` under `theme`; the default is dark; the
+  sign-in screen is always dark. The status bar and the Android navigation bar icons follow the theme. No "follow the phone"
+  option: `app.json` pins `userInterfaceStyle` to dark and changing it regenerates the native project.
+- **Light palette.** Music: page `#f4f4f8` (never pure white), ink `#14151f`, muted ink at 66%, accent `#d6215d`, glass white at
+  82% to 62%. Watch: page `#eef5f0`, ink `#0b2417`, muted `#456554`, accent `#0b7a42`, raised `#fbfdfb`. Measured contrast
+  (WCAG, `tests/theme.test.ts` fails below these): Music light ink 16.6, muted 5.6, accent 4.5, text on accent 4.8, danger 5.4;
+  Watch light ink 14.8, muted 5.9, accent 4.9, text on accent 5.4, warning 5.0. Dark (unchanged): Music ink 18.4, muted 7.7,
+  accent 6.7; Watch ink 18.3, muted 10.0, accent 11.7.
+- **Always dark.** Surfaces over video or posters: Watch's player, title page and poster cards read `watchDarkPalette`, `DarkTxt`
+  and `Glass dark`. The full-screen music player follows the theme (light: a pastel, artwork-tinted player with dark text). The
+  sign-in screen and the account menu and dialogs keep the dark paper palette.
+- **Dock (phones, up to 860 dp).** `src/features/music/Dock.tsx`: a 56 dp round glass button for Home and Your Library (opens a
+  menu that grows out of it on the bouncy spring), the mini player as a rounded pill, and a round Search button. Accent icons.
+- **Hero pages (phones).** `Hero.tsx` and `HeroPages.tsx`: a full-bleed 1080 px picture under the status bar (its own cache key,
+  because the picture cache is keyed by name alone), dark scrim at the top for the status bar and buttons, a fade to the page at
+  the foot. The page takes `TINT_STRENGTH` (32% dark, 20% light) of the cover's dominant colour (`coverTint.ts`, native
+  `dominantColor` on a 96 px copy) and eases back to the plain page over 520 dp. Back and "…" are pinned dark glass; after the
+  hero scrolls away the status bar gets a fade of the page colour (and dark icons in the light theme). Touch targets are 44 dp or more.
+- **Library.** `SectionPills.tsx`: the chosen section is an accent pill with its name, the others are 44 dp round icon buttons;
+  the change runs as a `LayoutAnimation` spring using the snappy response and damping (instant with reduced motion).
+- **Gradients are dithered.** Android draws gradients without dithering, which shows as bands in dark backgrounds. `Dither.tsx`
+  lays a fine noise tile (`assets/dither@3x.png`, alpha 0 to 2.4%) over the Music and Watch backdrops, the hero pages and the
+  full-screen player. It is a grid of plain images because `resizeMode="repeat"` drew nothing here. Put `<Dither />` as the last
+  child of any new view that holds a slow gradient.
+- **Not done.** Music Moments (needs accounts and a server). Favourite artist, download and add-to-library buttons (no such
+  stores; the star saves the singer's radio). Following the phone's theme. Light styling for sign-in, the account menu and
+  Settings. Tablet layouts keep the earlier headers.
+
+
+## Security model
+
+Added 2026-10-26. The rules are in `AGENTS.md` (Section 3, SEC-01 to SEC-52); this is the design record. Evidence is in `SECURITY_VALIDATION.md`.
+
+**This app is offline by construction.** It has no server, no account, no password, no network code and, in the release build, no network permission. Its security is about what the phone's other software and the person holding the phone can reach, and about not claiming more than it does.
+
+| Boundary | What crosses it | Controls |
+| --- | --- | --- |
+| Android to app | Media-store rows, picker results, deep links | Media-read permissions only, camera, microphone and overlay blocked (SEC-49); the app reads only what the system shows it, never writes originals; `cinemusicwave://` only brings the app forward, the app ignores what a link carries |
+| JavaScript to native module | URIs, sizes, counts | Only `content:` addresses, and a `file:` address only directly inside the module's artwork cache after links and `..` are resolved (SEC-50); picture sizes and batch sizes are bounded |
+| App to other apps and backups | The app's private storage | `allowBackup=false`, so Android backup and cloud restore do not copy the database; the database is in app-private storage; SQL is parameterised; no secret, key or token exists in the app |
+| Build to device | The APK | Release has no `INTERNET` permission and no `debuggable` flag; the only exported components are the launcher and AndroidX's profile receiver; a test guards each claim and the merged manifest of the built APK is read (TEST-17); signed with the public debug key until the owner creates a private keystore |
+
+**Decisions and limits.** "Skip Login" selects a device-local profile; it is not authentication and the screen says so (UI-14). Build-tool advisories (`node-forge`, `zod` via `@expo/cli`) do not ship. The release APK must not leave the owner's own devices until it has a private signing key. The native module's source is tracked because `.gitignore` anchors `/android/` and `/ios/` (GIT-07).

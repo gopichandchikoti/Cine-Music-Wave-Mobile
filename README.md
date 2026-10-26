@@ -40,3 +40,27 @@ Requirements: Node 22.13+, pnpm 11, a JDK 17 and the Android command-line SDK (s
 ## Documents
 
 `AGENTS.md` (rules for agents), `system_design.md` (architecture and decisions), `FEATURE_PARITY.md` (every web capability and its native status), `VALIDATION.md` (what was run and what was seen), `OPERATIONS.md`, `ANDROID_SETUP.md`, `IOS_SETUP.md`, `SOURCE_REFERENCE.md`, `FEATURE_LOG.md`, and `THIRD_PARTY_NOTICES.md` is generated from the installed dependencies' licenses when releasing.
+
+## Security
+
+The security policy is [`SECURITY.md`](SECURITY.md), the design record is the "Security model" in [`system_design.md`](system_design.md), and the evidence is [`SECURITY_VALIDATION.md`](SECURITY_VALIDATION.md). The rules every change must meet are in [`AGENTS.md`](AGENTS.md) (Section 3, SEC-01 to SEC-52; Section 13 for audits).
+
+```powershell
+node_modules\.bin\tsx.CMD --test tests\*.test.ts     # includes tests\security.test.ts (offline, backup, permissions, native module)
+node scripts\audit-standards.mjs                      # secrets, Android backup and permissions, native-module path confinement, docs, .gitignore
+pnpm audit --prod                                     # advisories (two build-tool advisories are recorded and are not in the app)
+```
+
+After any `app.json`, plugin or native change, rebuild with `pnpm build:android` and read the APK's merged manifest with `aapt2 dump permissions` and `aapt2 dump xmltree --file AndroidManifest.xml`.
+
+## Publication rules
+
+Maintainer feature logs stay local and are excluded from source control. Do not
+force-add or publish them. Enable the repository's push guard after cloning:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+Run `node --test scripts/publish-guard.checks.mjs` to verify the guard. It checks
+the complete history being pushed, including files deleted by later commits.

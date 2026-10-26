@@ -4,7 +4,7 @@ import { ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent, ty
 import { content as copy, formatContent } from '../../core/content';
 import { coversOf } from '../../core/musicHelpers';
 import type { Album, Artist, Mix, Tile } from '../../core/musicModel';
-import type { PlaylistSummary } from '../../core/musicTypes';
+import type { MusicTrack, PlayContext, PlaylistSummary } from '../../core/musicTypes';
 import { useInGrid } from '../../design/Grid';
 import { Press } from '../../design/primitives';
 import { music as M } from '../../design/tokens';
@@ -23,7 +23,7 @@ const songCount = (count: number): string => formatContent(count === 1 ? t.oneSo
 
 /** The play button that appears over a card's picture (always visible on touch screens). */
 function PlayBadge({ label, onPlay, style, size = 36 }: { label: string; onPlay: () => void; style?: ViewStyle; size?: number }) {
-  return <Press onPress={onPlay} label={label} style={[{ position: 'absolute', width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: M.ink, boxShadow: '0 8px 20px rgba(0, 0, 0, 0.45)' }, style]}>
+  return <Press onPress={onPlay} label={label} style={[{ position: 'absolute', width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: M.ink, boxShadow: M.shadowPlay }, style]}>
     <Play size={size * 0.5} color={M.accentInk} fill={M.accentInk} />
   </Press>;
 }
@@ -45,14 +45,14 @@ const CardText = ({ title, subtitle }: { title: string; subtitle: string }) => <
   <Txt size={13} color={M.muted} lines={1}>{subtitle}</Txt>
 </>;
 
-const coverShadow = { boxShadow: '0 10px 26px rgba(0, 0, 0, 0.4)', marginBottom: 6 } as const;
+const coverShadow = (): ViewStyle => ({ boxShadow: M.shadowCover, marginBottom: 6 });
 
 export function AlbumCard({ album }: { album: Album }) {
   const music = useMusic();
   const nav = useMusicNav();
   const play = (): void => music.playTracks(album.trackIds, { context: { kind: 'album', id: album.id, label: album.name }, shuffle: false });
   return <CardFrame onPress={() => nav.go({ page: 'album', id: album.id })} label={formatContent(t.openAlbum, { name: album.name })} play={{ label: formatContent(t.playAlbum, { name: album.name }), onPlay: play }}>
-    <Cover albumId={album.id} cover={album.cover} label={album.name} style={coverShadow} />
+    <Cover albumId={album.id} cover={album.cover} label={album.name} style={coverShadow()} />
     <CardText title={album.name} subtitle={[album.year, album.artists.slice(0, 2).join(', ') || songCount(album.trackIds.length)].filter(Boolean).join(' · ')} />
   </CardFrame>;
 }
@@ -62,7 +62,7 @@ export function ArtistCard({ artist }: { artist: Artist }) {
   const nav = useMusicNav();
   const play = (): void => music.playTracks(artist.trackIds, { context: { kind: 'artist', id: artist.key, label: artist.name }, shuffle: true });
   return <CardFrame onPress={() => nav.go({ page: 'artist', key: artist.key })} label={formatContent(t.openArtist, { name: artist.name })} play={{ label: formatContent(t.playArtist, { name: artist.name }), onPlay: play }}>
-    <Cover albumId={artist.coverAlbumId ?? ''} cover={artist.coverAlbumId !== null} label={artist.name} radius={9999} style={coverShadow} />
+    <Cover albumId={artist.coverAlbumId ?? ''} cover={artist.coverAlbumId !== null} label={artist.name} radius={9999} style={coverShadow()} />
     <CardText title={artist.name} subtitle={songCount(artist.trackIds.length)} />
   </CardFrame>;
 }
@@ -73,7 +73,7 @@ export function MixCard({ mix }: { mix: Mix }) {
   const covers = mix.albumIds.flatMap((id) => { const album = music.index.albumById.get(id); return album ? [{ albumId: album.id, cover: album.cover, label: album.name }] : []; });
   const play = (): void => music.playTracks(mix.trackIds, { context: { kind: 'mix', id: mix.id, label: mix.title }, shuffle: false });
   return <CardFrame onPress={() => nav.go({ page: 'mix', id: mix.id })} label={mix.title} play={{ label: formatContent(t.playNamed, { name: mix.title }), onPlay: play }}>
-    <Mosaic covers={covers} label={mix.title} style={coverShadow} />
+    <Mosaic covers={covers} label={mix.title} style={coverShadow()} />
     <CardText title={mix.title} subtitle={mix.description} />
   </CardFrame>;
 }
@@ -84,7 +84,7 @@ export function PlaylistCard({ playlist }: { playlist: PlaylistSummary }) {
   const tracks = playlist.trackIds.flatMap((id) => music.index.byId.get(id) ?? []);
   const play = (): void => music.playTracks(playlist.trackIds, { context: { kind: 'playlist', id: playlist.id, label: playlist.name }, shuffle: false });
   return <CardFrame onPress={() => nav.go({ page: 'playlist', id: playlist.id })} label={formatContent(t.openPlaylist, { name: playlist.name })} play={tracks.length > 0 ? { label: formatContent(t.playNamed, { name: playlist.name }), onPlay: play } : null}>
-    <Mosaic covers={coversOf(tracks)} label={playlist.name} style={coverShadow} />
+    <Mosaic covers={coversOf(tracks)} label={playlist.name} style={coverShadow()} />
     <CardText title={playlist.name} subtitle={`${t.playlistLabel} · ${songCount(playlist.trackCount)}`} />
   </CardFrame>;
 }
@@ -97,7 +97,7 @@ export function RadioCard({ id, label, seedKind, seedValue, onRemove }: { id: st
   const covers = coversOf(seedTracks.flatMap((trackId) => music.index.byId.get(trackId) ?? []));
   const start = (): void => music.startRadio({ kind: seedKind, value: seedValue }, label);
   return <CardFrame onPress={start} label={formatContent(t.playNamed, { name: label })} play={{ label: formatContent(t.playNamed, { name: label }), onPlay: start }}>
-    <View style={coverShadow}>
+    <View style={coverShadow()}>
       <Mosaic covers={covers} label={label} />
       <View style={{ position: 'absolute', left: 8, bottom: 8, flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 99, backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
         <Radio size={14} color="#fff" /><Txt size={11} weight={700} ls={0.04} upper color="#fff">{t.radioBadge}</Txt>
@@ -114,7 +114,7 @@ export function LikedCard() {
   const nav = useMusicNav();
   const ids = music.user.likes.filter((id) => music.index.byId.has(id));
   return <CardFrame onPress={() => nav.go({ page: 'liked' })} label={t.likedSongs} play={ids.length > 0 ? { label: formatContent(t.playNamed, { name: t.likedSongs }), onPlay: () => music.playTracks(ids, { context: { kind: 'liked', id: null, label: t.likedSongs }, shuffle: false }) } : null}>
-    <LikedCover radius={10} glyph={42} style={coverShadow} />
+    <LikedCover radius={10} glyph={42} style={coverShadow()} />
     <CardText title={t.likedSongs} subtitle={`${t.playlistLabel} · ${songCount(ids.length)}`} />
   </CardFrame>;
 }
@@ -164,7 +164,7 @@ export function SpeedDialTile({ tile }: { tile: Tile }) {
 }
 
 /** A titled row that slides sideways, with arrows that appear when there is more. */
-export function Shelf({ title, subtitle, children, action, columns = false }: { title: string; subtitle?: string; children: ReactNode; action?: ReactNode; columns?: boolean }) {
+export function Shelf({ title, subtitle, children, action, columns = false, arrows = true, onTitle }: { title: string; subtitle?: string; children: ReactNode; action?: ReactNode; columns?: boolean; /** show the scroll arrows (a phone swipes, so the new pages leave them off) */ arrows?: boolean; /** makes the title a button, with a chevron, that opens the whole list */ onTitle?: () => void }) {
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
   const [more, setMore] = useState({ back: false, forward: false });
   const [viewWidth, setViewWidth] = useState(0);
@@ -181,13 +181,20 @@ export function Shelf({ title, subtitle, children, action, columns = false }: { 
   return <View accessible={false} style={{ gap: 12, minWidth: 0 }}>
     <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Txt size={20} weight={800} ls={-0.02} accessibilityRole="header">{title}</Txt>
+        {onTitle
+          ? <Press onPress={onTitle} label={title} style={{ alignSelf: 'flex-start', minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Txt size={20} weight={800} ls={-0.02} accessibilityRole="header">{title}</Txt>
+            <ChevronRight size={20} color={M.muted} strokeWidth={3} />
+          </Press>
+          : <Txt size={20} weight={800} ls={-0.02} accessibilityRole="header">{title}</Txt>}
         {subtitle ? <Txt size={13} weight={500} color={M.muted} style={{ marginTop: 3 }}>{subtitle}</Txt> : null}
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
         {action}
-        <IconButton icon={ChevronLeft} label={t.scrollLeft} onPress={() => slide(-1)} disabled={!more.back} iconSize={20} />
-        <IconButton icon={ChevronRight} label={t.scrollRight} onPress={() => slide(1)} disabled={!more.forward} iconSize={20} />
+        {arrows ? <>
+          <IconButton icon={ChevronLeft} label={t.scrollLeft} onPress={() => slide(-1)} disabled={!more.back} iconSize={20} />
+          <IconButton icon={ChevronRight} label={t.scrollRight} onPress={() => slide(1)} disabled={!more.forward} iconSize={20} />
+        </> : null}
       </View>
     </View>
     <ScrollView ref={scroller} horizontal showsHorizontalScrollIndicator={false} onScroll={onScroll} scrollEventThrottle={32}
@@ -200,16 +207,16 @@ export function Shelf({ title, subtitle, children, action, columns = false }: { 
 }
 
 /** Songs laid out in columns of four rows that slide sideways (Quick picks, Listen again, mixes). */
-export function TrackColumns({ trackIds, context, rows = 4 }: { trackIds: readonly string[]; context: { kind: 'mix' | 'queue' | 'library'; id: string | null; label: string }; rows?: number }) {
+export function TrackColumns({ trackIds, context, rows = 4, subtitle, divided = false, peek }: { trackIds: readonly string[]; context: PlayContext; rows?: number; /** replaces the singer line under each title */ subtitle?: (track: MusicTrack) => string; /** a hairline between rows, and covers flush with the left edge */ divided?: boolean; /** how much of the shelf the next column shows (0 to 0.5), instead of the usual 8% */ peek?: number }) {
   const music = useMusic();
   const nav = useMusicNav();
   const shelfWidth = useContext(ShelfWidth);
   const tracks = trackIds.flatMap((id) => music.index.byId.get(id) ?? []);
   const ids = tracks.map((track) => track.id);
-  const width = shelfWidth > 0 ? (nav.compact ? shelfWidth * 0.92 : Math.min(shelfWidth, 420)) : 300;
+  const width = shelfWidth > 0 ? (nav.compact ? shelfWidth * (1 - (peek ?? 0.08)) : Math.min(shelfWidth, 420)) : 300;
   const columns: { track: (typeof tracks)[number]; position: number }[][] = [];
   tracks.forEach((track, position) => { const column = Math.floor(position / rows); (columns[column] ??= []).push({ track, position }); });
   return <>{columns.map((column, index) => <View key={index} style={{ width }}>
-    {column.map(({ track, position }) => <TrackRow key={track.id} track={track} showAlbum={false} onPlay={() => music.playTracks(ids, { start: position, context, shuffle: false })} />)}
+    {column.map(({ track, position }, row) => <TrackRow key={track.id} track={track} showAlbum={false} subtitle={subtitle?.(track)} divider={divided && row < column.length - 1} flush={divided} onPlay={() => music.playTracks(ids, { start: position, context, shuffle: false })} />)}
   </View>)}</>;
 }

@@ -1,11 +1,11 @@
 import { createContext, useContext } from 'react';
-import type { SearchFilters, SearchScope } from '../../core/musicModel';
+import type { RadioSeed, SearchFilters, SearchScope } from '../../core/musicModel';
 
 /** The pages of the music screen. */
 export type MusicRoute =
   | { page: 'home' }
   | { page: 'search'; query?: string; scope?: SearchScope; filters?: SearchFilters }
-  | { page: 'library'; tab?: 'playlists' | 'albums' | 'artists' | 'songs' | 'radios' }
+  | { page: 'library'; tab?: 'all' | 'playlists' | 'albums' | 'artists' | 'songs' | 'radios' }
   | { page: 'album'; id: string }
   | { page: 'artist'; key: string }
   | { page: 'playlist'; id: string }
@@ -13,8 +13,11 @@ export type MusicRoute =
   | { page: 'mix'; id: string }
   | { page: 'mood'; id: string };
 
-/** What a song's "…" menu was opened from, so it can offer "Remove from this playlist" or "Remove from queue". */
-export type MenuSource = { playlistId?: string; playlistPosition?: number; queuePosition?: number };
+/**
+ * What a "…" menu was opened from, so it can offer "Remove from this playlist" or "Remove from queue", or, on a singer's or film's page,
+ * "Start radio" for that singer or film.
+ */
+export type MenuSource = { playlistId?: string; playlistPosition?: number; queuePosition?: number; radio?: { seed: RadioSeed; label: string } };
 
 /** Where a button is on screen, so a menu on a wide screen can open beside it. */
 export type Anchor = { x: number; y: number; width: number; height: number };

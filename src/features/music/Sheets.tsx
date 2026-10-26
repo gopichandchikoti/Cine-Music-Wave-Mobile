@@ -7,7 +7,7 @@ import { artistLine, keyOf, radioTracks, seededRandom } from '../../core/musicMo
 import type { Lyrics, MusicTrack } from '../../core/musicTypes';
 import { useLibrary } from '../../data/LibraryProvider';
 import { Press } from '../../design/primitives';
-import { clamp, music as M } from '../../design/tokens';
+import { clamp, inkAlpha, music as M } from '../../design/tokens';
 import { Txt } from '../../design/Txt';
 import Wave from '../../../modules/wave-media';
 import { useMusic, usePlaybackClock } from './musicContext';
@@ -123,10 +123,10 @@ export function LyricsSheet() {
       {lines ? lines.map((line, index) => <Press key={`${line.time}:${index}`} onPress={() => music.seek(line.time)} label={line.text || '♪'}
         style={{ paddingVertical: 8, paddingHorizontal: 4, transform: index === current ? [{ scale: 1.04 }] : undefined }}>
         <View onLayout={(event) => { offsets.current[index] = event.nativeEvent.layout.y; }}>
-          <Txt size={size} weight={800} lh={1.25} ls={-0.02} color={index === current ? '#fff' : index < current ? 'rgba(255, 255, 255, 0.28)' : 'rgba(255, 255, 255, 0.4)'}>{line.text || '♪'}</Txt>
+          <Txt size={size} weight={800} lh={1.25} ls={-0.02} color={index === current ? M.text : index < current ? inkAlpha(0.28) : inkAlpha(0.4)}>{line.text || '♪'}</Txt>
         </View>
       </Press>) : null}
-      {state?.lyrics?.plain ? <Txt size={20} lh={1.7} color="rgba(255, 255, 255, 0.9)">{state.lyrics.plain}</Txt> : null}
+      {state?.lyrics?.plain ? <Txt size={20} lh={1.7} color={inkAlpha(0.9)}>{state.lyrics.plain}</Txt> : null}
     </ScrollView>
   </View>;
 }

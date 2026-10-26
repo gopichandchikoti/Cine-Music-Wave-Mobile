@@ -1,8 +1,10 @@
 node_modules/
 .expo/
 .env*
-android/
-ios/
+# The generated native projects live at the repository root. Anchored, so the app's own native module sources in
+# modules/*/android and modules/*/ios are NOT ignored: they are source, and a clone cannot build without them.
+/android/
+/ios/
 *.keystore
 *.p12
 *.mobileprovision
@@ -14,3 +16,21 @@ fixtures-private/
 **/build/
 **/.gradle/
 **/.cxx/
+
+# Scratch output, local tool config, security-scan results and local databases never belong in the repository
+.tmp-*
+.mcp.json
+strix_runs/
+*.sqlite
+*.sqlite3
+*.db
+
+# Local-only maintainer records, including case and separator variants.
+[Ff][Ee][Aa][Tt][Uu][Rr][Ee][ _-][Ll][Oo][Gg]
+[Ff][Ee][Aa][Tt][Uu][Rr][Ee][ _-][Ll][Oo][Gg][._ -]*
+[Ff][Ee][Aa][Tt][Uu][Rr][Ee][ _-][Ll][Oo][Gg][Ss]
+[Ff][Ee][Aa][Tt][Uu][Rr][Ee][ _-][Ll][Oo][Gg][Ss][._ -]*
+[Ff][Ee][Aa][Tt][Uu][Rr][Ee][Ll][Oo][Gg]
+[Ff][Ee][Aa][Tt][Uu][Rr][Ee][Ll][Oo][Gg][._ -]*
+[Ff][Ee][Aa][Tt][Uu][Rr][Ee][Ll][Oo][Gg][Ss]
+[Ff][Ee][Aa][Tt][Uu][Rr][Ee][Ll][Oo][Gg][Ss][._ -]*

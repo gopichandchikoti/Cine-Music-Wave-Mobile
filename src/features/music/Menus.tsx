@@ -9,7 +9,7 @@ import { Glass } from '../../design/Glass';
 import { usePresencePhase, useSpringEnterExit } from '../../design/Presence';
 import { Press } from '../../design/primitives';
 import { between, opacityOf } from '../../design/spring';
-import { music as M } from '../../design/tokens';
+import { glass, music as M } from '../../design/tokens';
 import { Txt } from '../../design/Txt';
 import { useMusic } from './musicContext';
 import { useMusicNav, type Anchor, type MenuSource } from './musicNav';
@@ -28,7 +28,7 @@ export type MenuState = { trackIds: readonly string[]; anchor: Anchor | null; so
 type Icon = ComponentType<{ size?: number; color?: string; fill?: string }>;
 
 /** The dark glass of menus, dialogs and popovers (web: .music-menu, .music-dialog, .music-popover). */
-export const menuGlass = { alphas: [0.14, 0.03, 0.07] as const, base: 'rgba(16, 18, 28, 0.58)', solid: 'rgba(28, 30, 40, 0.97)' };
+export const menuGlass = (): { alphas: readonly [number, number, number]; base: string; solid: string } => ({ alphas: glass.menuAlphas, base: glass.menuBase, solid: glass.menuSolid });
 
 /** A full-screen dimmer; pressing it outside the pane closes. `light` shows no dimming (menus), otherwise the page dims (dialogs). */
 export function Scrim({ onClose, light, children, align = 'center' }: { onClose: () => void; light?: boolean; children: ReactNode; align?: 'center' | 'end' | 'start' }) {
@@ -42,17 +42,17 @@ export function Scrim({ onClose, light, children, align = 'center' }: { onClose:
     return () => subscription.remove();
   }, [onClose, leaving]);
   return <View style={[StyleSheet.absoluteFill, { zIndex: 100 }]} pointerEvents={leaving ? 'none' : 'box-none'}>
-    <Animated.View style={[StyleSheet.absoluteFill, { opacity: opacityOf(fade), backgroundColor: light ? 'transparent' : 'rgba(4, 4, 10, 0.55)' }]}>
+    <Animated.View style={[StyleSheet.absoluteFill, { opacity: opacityOf(fade), backgroundColor: light ? 'transparent' : M.dimmer }]}>
       <Press onPress={onClose} label={t.close} style={StyleSheet.absoluteFill} />
     </Animated.View>
     <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, { padding: align === 'center' ? 16 : 0, justifyContent: align === 'end' ? 'flex-end' : align === 'start' ? 'flex-start' : 'center', alignItems: 'center' }]}>{children}</View>
   </View>;
 }
 
-function MenuItem({ icon: IconComponent, label, onPress, danger, fillIcon }: { icon: Icon; label: string; onPress: () => void; danger?: boolean; fillIcon?: boolean }) {
+export function MenuItem({ icon: IconComponent, label, onPress, danger, fillIcon }: { icon: Icon; label: string; onPress: () => void; danger?: boolean; fillIcon?: boolean }) {
   const nav = useMusicNav();
-  const ink = danger ? '#ff8a9c' : M.ink;
-  return <Press role="menuitem" onPress={onPress} label={label} pressedStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.14)' }}
+  const ink = danger ? M.danger : M.ink;
+  return <Press role="menuitem" onPress={onPress} label={label} pressedStyle={{ backgroundColor: M.pressed }}
     style={{ minHeight: nav.compact ? 50 : 42, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, borderRadius: 10 }}>
     <IconComponent size={18} color={ink} fill={fillIcon ? ink : 'none'} />
     <Txt size={nav.compact ? 16 : 14} color={ink}>{label}</Txt>
@@ -73,7 +73,7 @@ function MenuPane({ children, anchor, width = 250 }: { children: ReactNode; anch
   const insets = useSafeAreaInsets();
   if (nav.compact || !anchor) {
     return <SheetRise style={{ width: '100%', maxHeight: screenHeight - 24 }}>
-      <Glass {...menuGlass} radius={[24, 24, 0, 0]} style={{ padding: 10, paddingBottom: 10 + insets.bottom }}>{children}</Glass>
+      <Glass {...menuGlass()} radius={[24, 24, 0, 0]} style={{ padding: 10, paddingBottom: 10 + insets.bottom }}>{children}</Glass>
     </SheetRise>;
   }
   return <FloatingPane anchor={anchor} width={width}>{children}</FloatingPane>;
@@ -92,7 +92,7 @@ function FloatingPane({ children, anchor, width }: { children: ReactNode; anchor
   const top = flipped ? Math.max(MARGIN, anchor.y - height - 6) : below;
   return <Animated.View onLayout={(event) => setHeight(event.nativeEvent.layout.height)}
     style={{ position: 'absolute', left, top, width: w, maxHeight: screenHeight - 24, opacity: height > 0 ? opacityOf(pop) : 0, transformOrigin: flipped ? 'bottom right' : 'top right', transform: [{ scale: between(pop, POP_FROM, 1) }] }}>
-    <Glass {...menuGlass} radius={16} style={{ padding: 6 }}>{children}</Glass>
+    <Glass {...menuGlass()} radius={16} style={{ padding: 6 }}>{children}</Glass>
   </Animated.View>;
 }
 
@@ -101,7 +101,7 @@ function DialogPane({ children, maxHeight }: { children: ReactNode; maxHeight?: 
   const pop = useRef(new Animated.Value(0)).current;
   useSpringEnterExit(pop, 'bouncy');
   return <Animated.View style={{ width: '100%', maxWidth: 440, maxHeight, opacity: opacityOf(pop), transform: [{ scale: between(pop, DIALOG_FROM, 1) }] }}>
-    <Glass {...menuGlass} radius={22} style={{ width: '100%', maxHeight, padding: 20, gap: 14 }}>{children}</Glass>
+    <Glass {...menuGlass()} radius={22} style={{ width: '100%', maxHeight, padding: 20, gap: 14 }}>{children}</Glass>
   </Animated.View>;
 }
 
@@ -131,6 +131,7 @@ export function TrackMenu({ menu, onClose }: { menu: MenuState; onClose: () => v
         <MenuItem icon={ListStart} label={t.playNext} onPress={act(() => music.playNext(ids))} />
         <MenuItem icon={ListEnd} label={t.addToQueue} onPress={act(() => music.addToQueue(ids))} />
         <MenuItem icon={ListPlus} label={t.addToPlaylist} onPress={act(() => nav.pickPlaylist(ids))} />
+        {source?.radio ? <MenuItem icon={Radio} label={t.startRadio} onPress={act(() => music.startRadio(source.radio!.seed, source.radio!.label))} /> : null}
         {single ? <MenuItem icon={Heart} fillIcon={liked} label={liked ? t.unlike : t.like} onPress={act(() => music.toggleLike(single.id))} /> : null}
         {single ? <MenuItem icon={Radio} label={t.startRadio} onPress={act(() => music.startRadio({ kind: 'track', value: single.id }))} /> : null}
         {albumId ? <MenuItem icon={Disc3} label={t.goToAlbum} onPress={act(() => nav.go({ page: 'album', id: albumId }))} /> : null}
@@ -140,7 +141,7 @@ export function TrackMenu({ menu, onClose }: { menu: MenuState; onClose: () => v
           if (playlist) void music.setPlaylistTracks(playlist.id, playlist.trackIds.filter((_id, position) => position !== source.playlistPosition));
         })} /> : null}
         {source?.queuePosition !== undefined ? <MenuItem icon={X} danger label={t.removeFromQueue} onPress={act(() => music.removeFromQueue(source.queuePosition!))} /> : null}
-        {nav.compact ? <Press role="menuitem" onPress={onClose} label={t.close} style={{ minHeight: 50, marginTop: 6, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.1)' }}><Txt size={16} weight={700}>{t.close}</Txt></Press> : null}
+        {nav.compact ? <Press role="menuitem" onPress={onClose} label={t.close} style={{ minHeight: 50, marginTop: 6, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: M.quiet }}><Txt size={16} weight={700}>{t.close}</Txt></Press> : null}
       </ScrollView>
     </MenuPane>
   </Scrim>;
@@ -150,7 +151,7 @@ function PlaylistOption({ playlist, onPick }: { playlist: PlaylistSummary; onPic
   const music = useMusic();
   const covers = [...new Set(playlist.trackIds.map((id) => music.index.byId.get(id)?.albumId).filter((id): id is string => Boolean(id)))].slice(0, 4)
     .map((albumId) => { const track = music.index.tracks.find((entry) => entry.albumId === albumId)!; return { albumId, cover: track.cover, label: track.album }; });
-  return <Press onPress={onPick} label={playlist.name} pressedStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.12)' }} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 6, borderRadius: 12 }}>
+  return <Press onPress={onPick} label={playlist.name} pressedStyle={{ backgroundColor: M.pressed }} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 6, borderRadius: 12 }}>
     <View style={{ width: 48 }}><Mosaic covers={covers} label={playlist.name} radius={8} /></View>
     <View style={{ flex: 1, minWidth: 0 }}>
       <Txt size={14} weight={700} lines={1}>{playlist.name}</Txt>
@@ -161,7 +162,7 @@ function PlaylistOption({ playlist, onPick }: { playlist: PlaylistSummary; onPic
 
 function DialogInput({ value, onChange, onSubmit, placeholder, label }: { value: string; onChange: (value: string) => void; onSubmit: () => void; placeholder: string; label: string }) {
   return <TextInput value={value} onChangeText={onChange} onSubmitEditing={onSubmit} placeholder={placeholder} placeholderTextColor={M.muted} accessibilityLabel={label} maxLength={80} autoFocus returnKeyType="done"
-    style={{ flex: 1, minWidth: 0, minHeight: 46, paddingHorizontal: 14, paddingVertical: 0, borderWidth: 1, borderColor: M.line, borderRadius: 12, backgroundColor: 'rgba(0, 0, 0, 0.25)', color: M.ink, fontFamily: 'DMSans_400Regular', fontSize: 16 }} />;
+    style={{ flex: 1, minWidth: 0, minHeight: 46, paddingHorizontal: 14, paddingVertical: 0, borderWidth: 1, borderColor: M.line, borderRadius: 12, backgroundColor: M.field, color: M.ink, fontFamily: 'DMSans_400Regular', fontSize: 16 }} />;
 }
 
 /** Choose a playlist for some songs, or make a new one. */
@@ -230,12 +231,12 @@ export function OptionSheet({ title, options, value, onPick, onClose }: { title:
       <Txt size={12} weight={700} ls={0.08} upper color={M.muted} style={{ paddingHorizontal: 12, paddingTop: 6, paddingBottom: 8 }}>{title}</Txt>
       <ScrollView style={{ maxHeight: height * 0.55 }} showsVerticalScrollIndicator={false}>
         {options.map((option) => <Press key={option.value || 'all'} role="radio" checked={option.value === value} label={option.label} onPress={() => { onPick(option.value); onClose(); }}
-          pressedStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.14)' }} style={{ minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 12, borderRadius: 10 }}>
+          pressedStyle={{ backgroundColor: M.pressed }} style={{ minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 12, borderRadius: 10 }}>
           <Txt size={16} weight={option.value === value ? 700 : 400} lines={1} style={{ flex: 1 }}>{option.label}</Txt>
           {option.value === value ? <Check size={18} color={M.accent} /> : null}
         </Press>)}
       </ScrollView>
-      <Press role="menuitem" onPress={onClose} label={t.close} style={{ minHeight: 50, marginTop: 6, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.1)' }}><Txt size={16} weight={700}>{t.close}</Txt></Press>
+      <Press role="menuitem" onPress={onClose} label={t.close} style={{ minHeight: 50, marginTop: 6, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: M.quiet }}><Txt size={16} weight={700}>{t.close}</Txt></Press>
     </MenuPane>
   </Scrim>;
 }

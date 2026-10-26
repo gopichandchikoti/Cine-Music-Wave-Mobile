@@ -64,7 +64,7 @@
     "continueAsGuest": "Continue as guest",
     "previewTheAppAndTryTheMarkdownEditorWithoutAn": "Sign in to enjoy your personal cinema and music library.",
     "localModeEmailDeliveryIsNotConfiguredVerificationAndPassword": "Local mode: email delivery is not configured. Verification and password reset emails cannot be sent.",
-    "passwordsAreHashedProviderPasswordsStayWithTheProvider": "Passwords are hashed. Provider passwords stay with the provider.",
+    "passwordsAreHashedProviderPasswordsStayWithTheProvider": "No password is stored or sent from this phone. Provider passwords stay with the provider.",
     "yourLearningLibraryAtYourOwnPace": "Your cinema. Your music. Your pace."
   },
   "authMascot": {
@@ -85,7 +85,9 @@
     "yourAccount": "Your account",
     "myProfile": "My profile",
     "settings": "Settings",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "switchToLight": "Light mode",
+    "switchToDark": "Dark mode"
   },
   "profileView": {
     "providerConfigurationIsUnavailable": "Provider configuration is unavailable.",
@@ -139,6 +141,7 @@
     "theme": "Theme",
     "dark": "Dark",
     "light": "Light",
+    "themeHint": "Applies to Music and Watch. The sign-in screen stays dark.",
     "readingSize": "Interface size",
     "standard": "Standard",
     "large": "Large",
@@ -311,6 +314,7 @@
     "home": "Home",
     "search": "Search",
     "yourLibrary": "Your Library",
+    "sections": "Choose Home or Your Library",
     "nowPlaying": "Now playing",
     "nowPlayingTabs": "Now playing sections",
     "openMusic": "Open Music",
@@ -334,6 +338,9 @@
     "moodSubtitle": "Picked from how loud, how long and how lively your songs are",
     "mixLabel": "Mix",
     "scopeAll": "All",
+    "recentlyAdded": "Recently added",
+    "onRepeat": "On repeat",
+    "librarySections": "Library sections",
     "scopeSongs": "Songs",
     "scopeFilms": "Albums & films",
     "scopeSingers": "Singers",
@@ -369,6 +376,11 @@
     "filmMany": "films",
     "starring": "Starring",
     "popular": "Popular",
+    "topSongs": "Top songs",
+    "featuredAlbum": "Featured album",
+    "saveArtistRadio": "Save {name} radio to your library",
+    "removeArtistRadio": "Remove {name} radio from your library",
+    "radioRemovedToast": "{name} removed from your radios",
     "allSongs": "All songs",
     "singsWith": "Often sings with",
     "likedSongs": "Liked Songs",

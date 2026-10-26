@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { Animated, Easing, PanResponder, Pressable, View, type GestureResponderEvent, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
+import { music } from './tokens';
 
 export type PressProps = {
   onPress?: () => void;
@@ -36,7 +37,7 @@ export function Press({ onPress, onLongPress, style, pressedStyle, pressScale, d
 }
 
 /** A turning ring: web .music-spinner / .watch-spinner. */
-export function Spinner({ size = 28, border = 3, color, track = 'rgba(255, 255, 255, 0.2)', slow = false }: { size?: number; border?: number; color: string; track?: string; slow?: boolean }) {
+export function Spinner({ size = 28, border = 3, color, track = music.ring, slow = false }: { size?: number; border?: number; color: string; track?: string; slow?: boolean }) {
   const turn = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     const loop = Animated.loop(Animated.timing(turn, { toValue: 1, duration: slow ? 2400 : 800, easing: Easing.linear, useNativeDriver: true }));

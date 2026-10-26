@@ -6,9 +6,10 @@ import { content as copy, formatContent } from '../../core/content';
 import { buildRows, newTitleIds, nextToPlay, pickFeatured, progressFraction, searchTitles, similarTo } from '../../core/watchModel';
 import type { PlayTarget, ProgressEntry, WatchFile, WatchTitle } from '../../core/watchTypes';
 import { useLibrary } from '../../data/LibraryProvider';
+import { Dither } from '../../design/Dither';
 import { Grid } from '../../design/Grid';
 import { Press, Spinner } from '../../design/primitives';
-import { clamp, WATCH_PHONE_MAX, WATCH_TABLET_MAX, watch as W } from '../../design/tokens';
+import { clamp, theme, WATCH_PHONE_MAX, WATCH_TABLET_MAX, watch as W } from '../../design/tokens';
 import { Txt } from '../../design/Txt';
 import { useMusic } from '../music/musicContext';
 import { AccessNotice, AccessPanel } from '../shell/AccessPanel';
@@ -27,7 +28,7 @@ const NOTICE_MS = 4500;
 const newestYearFirst = (left: WatchTitle, right: WatchTitle): number => (right.year ?? 0) - (left.year ?? 0) || left.title.localeCompare(right.title);
 
 /** The same chrome on every Watch icon button: a faint rim and a dark green fill (web: .watch-icon-button). */
-const iconBox = { ...glassLook, width: 38, height: 38, borderRadius: 8, alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: 'rgba(7, 34, 22, 0.78)' };
+const iconBox = () => ({ ...glassLook(), width: 38, height: 38, borderRadius: 8, alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: W.field });
 
 export function WatchView({ onMusic }: { onMusic: () => void }) {
   const library = useLibrary();
@@ -98,7 +99,7 @@ export function WatchView({ onMusic }: { onMusic: () => void }) {
     return () => subscription.remove();
   }, [playing, dialogId, query, section]);
 
-  const card = (title: WatchTitle, fixed?: number): ReactNode => <TitleCard key={title.id} title={title} progress={fractions.get(title.id) ?? 0} isNew={newIds.has(title.id)} width={fixed ?? '100%'} onOpen={openTitle} />;
+  const card = (title: WatchTitle, fixed?: number): ReactNode => <TitleCard key={title.id} title={title} progress={fractions.get(title.id) ?? 0} isNew={newIds.has(title.id)} width={fixed ?? '100%'} onOpen={openTitle} scheme={theme.mode} />;
   const grid = (items: readonly WatchTitle[], empty: string): ReactNode => (items.length === 0
     ? <Txt size={16} color={W.muted}>{empty}</Txt>
     : <Grid columns="auto" minWidth={cardWidth} gap={8} rowGap={14}>{items.map((title) => card(title))}</Grid>);
@@ -133,7 +134,7 @@ export function WatchView({ onMusic }: { onMusic: () => void }) {
     {SECTIONS.map((item) => {
       const active = section === item.id && !results;
       return <Press key={item.id} role="tab" selected={active} label={item.label} onPress={() => { setSection(item.id); setQuery(''); scroller.current?.scrollTo({ y: 0, animated: false }); }}
-        style={[glassLook, { minHeight: 36, paddingHorizontal: 13, borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: active ? 'rgba(140, 255, 190, 0.12)' : 'transparent' }]}>
+        style={[glassLook(), { minHeight: 36, paddingHorizontal: 13, borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: active ? W.chip : 'transparent' }]}>
         <Txt size={14} weight={active ? 700 : 400} color={active ? W.ink : W.muted}>{item.label}</Txt>
       </Press>;
     })}
@@ -143,35 +144,35 @@ export function WatchView({ onMusic }: { onMusic: () => void }) {
   const expanded = searchFocused && phone;
   const search = <View style={expanded
     ? { position: 'absolute', zIndex: 3, top: topPad, left: gutter, right: gutter, height: 38, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 11, borderWidth: 1, borderColor: W.accent, borderRadius: 8, backgroundColor: W.raised }
-    : { width: searchWidth, height: 38, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: phone ? 10 : 11, borderWidth: 1, borderColor: W.line, borderRadius: 8, backgroundColor: 'rgba(7, 34, 22, 0.78)', overflow: 'hidden' }}>
+    : { width: searchWidth, height: 38, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: phone ? 10 : 11, borderWidth: 1, borderColor: W.line, borderRadius: 8, backgroundColor: W.field, overflow: 'hidden' }}>
     <Search size={17} color={W.muted} />
     <TextInput value={query} onChangeText={setQuery} placeholder={copy.watchView.searchPlaceholder} placeholderTextColor={W.muted} accessibilityLabel={copy.watchView.searchWatchMedia} returnKeyType="search" selectionColor={W.accent}
       onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)}
       style={{ flex: 1, minWidth: 0, width: phone && !searchFocused ? 0 : undefined, opacity: phone && !searchFocused ? 0 : 1, paddingVertical: 0, color: W.ink, fontFamily: 'DMSans_400Regular', fontSize: 14 }} />
     {query ? <Press onPress={() => setQuery('')} label={copy.watchView.clearSearch} style={{ padding: 2, borderRadius: 99 }}><X size={15} color={W.muted} /></Press> : null}
   </View>;
-  const refresh = <Press onPress={() => { void library.rescan(); }} disabled={scanning} label={copy.watchView.refreshLibrary} style={iconBox}><Spin on={scanning}><RefreshCw size={18} color={W.ink} /></Spin></Press>;
-  const modeSwitch = <View accessibilityRole="tablist" accessibilityLabel={copy.watchView.appModes} style={{ flexDirection: 'row', gap: 2, padding: 3, borderWidth: 1, borderColor: W.line, borderRadius: 9, backgroundColor: 'rgba(7, 34, 22, 0.78)' }}>
+  const refresh = <Press onPress={() => { void library.rescan(); }} disabled={scanning} label={copy.watchView.refreshLibrary} style={iconBox()}><Spin on={scanning}><RefreshCw size={18} color={W.ink} /></Spin></Press>;
+  const modeSwitch = <View accessibilityRole="tablist" accessibilityLabel={copy.watchView.appModes} style={{ flexDirection: 'row', gap: 2, padding: 3, borderWidth: 1, borderColor: W.line, borderRadius: 9, backgroundColor: W.field }}>
     <View accessibilityRole="tab" accessibilityState={{ selected: true }} style={{ minHeight: 30, justifyContent: 'center', paddingHorizontal: phone ? 8 : 10, borderRadius: 6, backgroundColor: W.accent }}><Txt size={12} weight={700} color={W.accentInk}>{copy.watchView.watch}</Txt></View>
-    <Press onPress={onMusic} label={copy.modeSwitch.music} role="tab" style={[glassLook, { minHeight: 30, flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: phone ? 8 : 10, borderRadius: 6, backgroundColor: 'transparent' }]}>
+    <Press onPress={onMusic} label={copy.modeSwitch.music} role="tab" style={[glassLook(), { minHeight: 30, flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: phone ? 8 : 10, borderRadius: 6, backgroundColor: 'transparent' }]}>
       <AudioLines size={15} color={W.muted} />
       {!phone ? <Txt size={12} color={W.muted}>{copy.modeSwitch.music}</Txt> : null}
     </Press>
   </View>;
-  const account = <ProfileControl />;
+  const account = <ProfileControl tone="watch" />;
   const brand = <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
     <View style={{ width: 36, height: 36, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: W.accent }}><AudioLines size={19} color={W.accentInk} /></View>
     <View><Txt family="mono" weight={500} size={9} ls={0.16} color={W.muted}>{copy.watchView.secondBrain}</Txt><Txt size={19} weight={800} ls={-0.02} style={{ marginTop: 3 }}>{copy.watchView.watch}</Txt></View>
   </View>;
 
   return <View style={{ flex: 1, backgroundColor: W.bg }}>
-    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundImage: 'radial-gradient(1100px 620px at 85% -8%, rgba(52, 229, 138, 0.13), transparent 62%), radial-gradient(900px 520px at -8% 38%, rgba(25, 194, 109, 0.1), transparent 62%)' }]} />
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundImage: `radial-gradient(1100px 620px at 85% -8%, ${W.glowA}, transparent 62%), radial-gradient(900px 520px at -8% 38%, ${W.glowB}, transparent 62%)` }]}><Dither /></View>
     <ScrollView ref={scroller} scrollEventThrottle={32} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" onScroll={(event: NativeSyntheticEvent<NativeScrollEvent>) => setScrolled(event.nativeEvent.contentOffset.y > 24)}
       contentContainerStyle={{ paddingTop: home ? 0 : barHeight + Math.max(0, insets.top - 12) }}>
-      {library.loaded ? body() : <View style={{ minHeight: 600, alignItems: 'center', justifyContent: 'center', gap: 14 }}><Spinner size={38} border={3} color={W.accent} track="rgba(236, 253, 243, 0.25)" /><Txt size={16} color={W.muted}>{copy.watchView.loadingLibrary}</Txt></View>}
+      {library.loaded ? body() : <View style={{ minHeight: 600, alignItems: 'center', justifyContent: 'center', gap: 14 }}><Spinner size={38} border={3} color={W.accent} track={W.track} /><Txt size={16} color={W.muted}>{copy.watchView.loadingLibrary}</Txt></View>}
     </ScrollView>
 
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 40, minHeight: barHeight, paddingTop: topPad, paddingHorizontal: gutter, paddingBottom: 8, gap: 6, backgroundColor: solid ? 'rgba(3, 17, 10, 0.94)' : undefined, backgroundImage: solid ? undefined : 'linear-gradient(to bottom, rgba(3, 17, 10, 0.92), rgba(3, 17, 10, 0))', boxShadow: solid ? `0 1px 0 ${W.line}` : undefined }}>
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 40, minHeight: barHeight, paddingTop: topPad, paddingHorizontal: gutter, paddingBottom: 8, gap: 6, backgroundColor: solid ? `rgba(${W.veil}, 0.94)` : undefined, backgroundImage: solid ? undefined : `linear-gradient(to bottom, rgba(${W.veil}, 0.92), rgba(${W.veil}, 0))`, boxShadow: solid ? `0 1px 0 ${W.line}` : undefined }}>
       {phone || tablet ? <>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: phone ? 6 : 28 }}>
           {!phone ? brand : null}
@@ -185,13 +186,13 @@ export function WatchView({ onMusic }: { onMusic: () => void }) {
       </View>}
     </View>
 
-    {scanning && library.scan.total > 0 ? <View pointerEvents="none" accessibilityRole="progressbar" style={{ position: 'absolute', zIndex: 30, left: gutter, bottom: 16 + insets.bottom, maxWidth: Math.min(520, width - 2 * gutter), flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 9, paddingHorizontal: 13, borderWidth: 1, borderColor: W.line, borderRadius: 8, backgroundColor: 'rgba(10, 42, 27, 0.96)', boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)' }}>
-      <Spinner size={14} border={2} color={W.accent} track="rgba(236, 253, 243, 0.25)" /><Txt size={13}>{formatContent(copy.watchView.preparingLibrary, { count: Math.max(0, library.scan.total - library.scan.done) })}</Txt>
+    {scanning && library.scan.total > 0 ? <View pointerEvents="none" accessibilityRole="progressbar" style={{ position: 'absolute', zIndex: 30, left: gutter, bottom: 16 + insets.bottom, maxWidth: Math.min(520, width - 2 * gutter), flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 9, paddingHorizontal: 13, borderWidth: 1, borderColor: W.line, borderRadius: 8, backgroundColor: W.float, boxShadow: W.shadow }}>
+      <Spinner size={14} border={2} color={W.accent} track={W.track} /><Txt size={13}>{formatContent(copy.watchView.preparingLibrary, { count: Math.max(0, library.scan.total - library.scan.done) })}</Txt>
     </View> : null}
 
     {dialogTitle ? <TitleDialog title={dialogTitle} progress={progress} inList={listed.has(dialogTitle.id)} similar={similarTo(dialogTitle, titles)} onClose={() => setDialogId(null)} onPlay={play} onToggleList={(title) => { void toggleList(title); }} onOpenTitle={openTitle} /> : null}
     {playing ? <Player key={playing.file.id} title={playing.title} file={playing.file} startAt={playing.startAt} onClose={() => setPlaying(null)} onPlayFile={playFile} onProgress={recordProgress} /> : null}
-    {notice ? <View pointerEvents="none" style={{ position: 'absolute', zIndex: 90, bottom: 22 + insets.bottom, alignSelf: 'center', maxWidth: width - 32, paddingVertical: 11, paddingHorizontal: 16, borderWidth: 1, borderColor: W.line, borderRadius: 8, backgroundColor: W.surface2, boxShadow: '0 12px 30px rgba(0, 0, 0, 0.5)' }}><Txt size={14}>{notice}</Txt></View> : null}
+    {notice ? <View pointerEvents="none" style={{ position: 'absolute', zIndex: 90, bottom: 22 + insets.bottom, alignSelf: 'center', maxWidth: width - 32, paddingVertical: 11, paddingHorizontal: 16, borderWidth: 1, borderColor: W.line, borderRadius: 8, backgroundColor: W.surface2, boxShadow: W.shadow }}><Txt size={14}>{notice}</Txt></View> : null}
   </View>;
 }
 

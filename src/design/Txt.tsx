@@ -1,5 +1,6 @@
 import { Text, type StyleProp, type TextProps, type TextStyle } from 'react-native';
 import { monoFamily, sansFamily, serifFamily, type Weight } from './fonts';
+import { music } from './tokens';
 
 export type TxtProps = TextProps & {
   size?: number;
@@ -18,8 +19,13 @@ export type TxtProps = TextProps & {
   style?: StyleProp<TextStyle>;
 };
 
-/** Text with the web app's fonts. Size, weight and spacing use the same numbers as the CSS. */
-export function Txt({ size = 14, weight = 400, family = 'sans', color = '#fff', ls, lh, upper, num, align, lines, style, ...rest }: TxtProps) {
+/** Text for surfaces that sit on video or posters and stay dark in both themes: white unless told otherwise. */
+export function DarkTxt({ color = '#ffffff', ...rest }: TxtProps) {
+  return <Txt color={color} {...rest} />;
+}
+
+/** Text with the web app's fonts. Size, weight and spacing use the same numbers as the CSS. Unless told otherwise it takes the theme's text colour. */
+export function Txt({ size = 14, weight = 400, family = 'sans', color = music.text, ls, lh, upper, num, align, lines, style, ...rest }: TxtProps) {
   const fontFamily = family === 'mono' ? monoFamily(weight) : family === 'serif' ? serifFamily(weight) : sansFamily(weight);
   return <Text
     {...rest}

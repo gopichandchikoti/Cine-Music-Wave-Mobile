@@ -14,8 +14,8 @@ import type { ProgressEntry, WatchFile, WatchTitle } from '../../core/watchTypes
 import { useLibrary } from '../../data/LibraryProvider';
 import { Glass } from '../../design/Glass';
 import { Press, RangeSlider, Spinner } from '../../design/primitives';
-import { clamp, WATCH_PHONE_MAX, watch as W } from '../../design/tokens';
-import { Txt } from '../../design/Txt';
+import { clamp, WATCH_PHONE_MAX, watchDarkPalette as W } from '../../design/tokens';
+import { DarkTxt as Txt } from '../../design/Txt';
 import Wave from '../../../modules/wave-media';
 import { glassLook, WatchButton } from './ui';
 
@@ -51,7 +51,7 @@ const PICTURE_COPY: Record<PictureId, { label: string; hint: string }> = {
 /** A round glass button on the player (web: .watch-player-button). */
 function PlayerButton({ icon: IconComponent, label, onPress, on, disabled, fill }: { icon: Icon; label: string; onPress: () => void; on?: boolean; disabled?: boolean; fill?: boolean }) {
   const tint = on ? W.accent : '#fff';
-  return <Press onPress={onPress} label={label} disabled={disabled} expanded={undefined} pressScale={0.94} style={[glassLook, { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' }]}>
+  return <Press onPress={onPress} label={label} disabled={disabled} expanded={undefined} pressScale={0.94} style={[glassLook(true), { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' }]}>
     <IconComponent size={22} color={tint} fill={fill ? tint : 'none'} />
   </Press>;
 }
@@ -294,12 +294,12 @@ export function Player({ title, file, startAt, onClose, onPlayFile, onProgress }
     </Press>
 
     {hud ? <View key={hud.id} pointerEvents="none" style={{ position: 'absolute', top: 88 + insets.top, alignSelf: 'center', maxWidth: width - 32, zIndex: 6 }}>
-      <Glass tint={glassTint} base="rgba(3, 20, 12, 0.46)" border="rgba(190, 255, 220, 0.24)" radius={999} blur={0} style={{ paddingVertical: 9, paddingHorizontal: 18 }}><Txt size={15} weight={700} align="center">{hud.text}</Txt></Glass>
+      <Glass dark tint={glassTint} base="rgba(3, 20, 12, 0.46)" border="rgba(190, 255, 220, 0.24)" radius={999} blur={0} style={{ paddingVertical: 9, paddingHorizontal: 18 }}><Txt size={15} weight={700} align="center">{hud.text}</Txt></Glass>
     </View> : null}
 
     <Animated.View pointerEvents={idle ? 'none' : 'box-none'} style={{ position: 'absolute', top: 0, left: 0, right: 0, opacity: idle ? 0 : 1, zIndex: 3 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingTop: 16 + insets.top, paddingHorizontal: 22, paddingBottom: 46, backgroundImage: 'linear-gradient(to bottom, rgba(1, 10, 5, 0.85), rgba(1, 10, 5, 0))' }}>
-        <Press onPress={close} label={copy.watchView.backToLibrary} pressScale={0.94} style={[glassLook, { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(190, 255, 220, 0.12)' }]}><ChevronLeft size={24} color={W.ink} /></Press>
+        <Press onPress={close} label={copy.watchView.backToLibrary} pressScale={0.94} style={[glassLook(true), { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(190, 255, 220, 0.12)' }]}><ChevronLeft size={24} color={W.ink} /></Press>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Txt family="mono" weight={500} size={10} ls={0.14} upper color={W.muted}>{copy.watchView.nowPlaying}</Txt>
           <Txt size={clamp(15, width * 0.016, 20)} weight={700} lines={1} style={{ marginTop: 4 }}>{heading}</Txt>
@@ -317,13 +317,13 @@ export function Player({ title, file, startAt, onClose, onPlayFile, onProgress }
       <Txt size={16} weight={700}>{record ? copy.watchView.playbackFailed : 'This file is no longer available.'}</Txt>
       <Txt size={14} lh={1.5} color={W.muted} align="center" style={{ marginBottom: 6 }}>{error?.message && record ? `${copy.watchView.playbackFailedHelp} (${error.message})` : record ? copy.watchView.playbackFailedHelp : 'It was moved, removed, or Android no longer lets this app see it. Other titles are not affected.'}</Txt>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10 }}>
-        {record ? <WatchButton primary icon={RotateCcw} label={copy.watchView.tryAgain} onPress={retry} /> : null}
-        <WatchButton label={copy.watchView.backToLibrary} onPress={close} />
+        {record ? <WatchButton dark primary icon={RotateCcw} label={copy.watchView.tryAgain} onPress={retry} /> : null}
+        <WatchButton dark label={copy.watchView.backToLibrary} onPress={close} />
       </View>
     </View> : null}
 
     <Animated.View pointerEvents={idle ? 'none' : 'box-none'} style={{ position: 'absolute', left: edge, right: edge, bottom, opacity: idle ? 0 : 1, zIndex: 3 }}>
-      <Glass tint={glassTint} alphas={[0.17, 0.04, 0.09]} base="rgba(3, 20, 12, 0.46)" border="rgba(190, 255, 220, 0.24)" radius={phone ? 22 : 28} blur={0} style={{ paddingTop: phone ? 10 : 12, paddingHorizontal: phone ? 12 : 22, paddingBottom: phone ? 6 : 8 }}>
+      <Glass dark tint={glassTint} alphas={[0.17, 0.04, 0.09]} base="rgba(3, 20, 12, 0.46)" border="rgba(190, 255, 220, 0.24)" radius={phone ? 22 : 28} blur={0} style={{ paddingTop: phone ? 10 : 12, paddingHorizontal: phone ? 12 : 22, paddingBottom: phone ? 6 : 8 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <Txt family="mono" weight={500} size={12} num style={{ minWidth: 42 }}>{formatClock(shown)}</Txt>
           <RangeSlider style={{ flex: 1 }} label={copy.watchView.seekMedia} value={clamp(shown, 0, Math.max(length, 1))} max={Math.max(length, 1)} step={1} fill={W.accent} track="rgba(236, 253, 243, 0.2)" thumb={W.accent} thumbSize={14}

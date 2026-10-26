@@ -18,7 +18,7 @@ const t = copy.musicView;
 const clamp = (value: number, low: number, high: number): number => Math.min(Math.max(value, low), high);
 
 /** The progress slider with the elapsed and remaining time. Dragging only moves the handle; the song jumps when you let go. */
-export function SeekBar({ compact = false, thumb = false }: { compact?: boolean; thumb?: boolean }) {
+export function SeekBar({ compact = false }: { compact?: boolean }) {
   const music = useMusic();
   const { position, duration } = usePlaybackClock();
   const [scrub, setScrub] = useState<number | null>(null);
@@ -26,7 +26,7 @@ export function SeekBar({ compact = false, thumb = false }: { compact?: boolean;
   const max = Math.max(duration, 1);
   return <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
     {!compact ? <Txt size={12} color={M.muted} num style={{ minWidth: 38 }}>{formatTime(shown)}</Txt> : null}
-    <RangeSlider style={{ flex: 1 }} label={t.seek} value={clamp(shown, 0, max)} max={max} step={1} fill={M.ink} track="rgba(255, 255, 255, 0.22)" thumb={thumb ? '#fff' : '#fff'} disabled={!music.track}
+    <RangeSlider style={{ flex: 1 }} label={t.seek} value={clamp(shown, 0, max)} max={max} step={1} fill={M.ink} track={M.track} thumb={M.solid} disabled={!music.track}
       onChange={setScrub} onCommit={(value) => { music.seek(value); setScrub(null); }} />
     {!compact ? <Txt size={12} color={M.muted} num align="right" style={{ minWidth: 38 }}>{formatTime(Math.max(0, duration - shown))}</Txt> : null}
   </View>;
@@ -37,8 +37,8 @@ export function PlayButton({ size }: { size: number }) {
   const music = useMusic();
   const glyph = size >= 60 ? 34 : size >= 50 ? 28 : 26;
   return <Press onPress={music.toggle} disabled={!music.track} label={music.playing ? t.pause : t.play} pressScale={0.95}
-    style={{ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: M.ink, boxShadow: '0 6px 20px rgba(0, 0, 0, 0.4)' }}>
-    {music.buffering && music.playing ? <Spinner size={22} border={3} color={M.accentInk} track="rgba(26, 6, 16, 0.25)" /> : music.playing ? <Pause size={glyph} color={M.accentInk} fill={M.accentInk} /> : <Play size={glyph} color={M.accentInk} fill={M.accentInk} />}
+    style={{ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: M.ink, boxShadow: M.shadowButton }}>
+    {music.buffering && music.playing ? <Spinner size={22} border={3} color={M.accentInk} track={M.onSolidTrack} /> : music.playing ? <Pause size={glyph} color={M.accentInk} fill={M.accentInk} /> : <Play size={glyph} color={M.accentInk} fill={M.accentInk} />}
   </Press>;
 }
 
@@ -71,7 +71,7 @@ export function Volume() {
   const Icon = level === 0 ? VolumeX : level < 0.5 ? Volume1 : Volume2;
   return <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
     <IconButton icon={Icon} label={music.muted || music.volume === 0 ? t.unmute : t.mute} onPress={music.toggleMute} />
-    <RangeSlider style={{ width: 96 }} label={t.volume} value={level} max={1} step={0.02} fill={M.ink} track="rgba(255, 255, 255, 0.22)" onChange={music.setVolume} />
+    <RangeSlider style={{ width: 96 }} label={t.volume} value={level} max={1} step={0.02} fill={M.ink} track={M.track} thumb={M.solid} onChange={music.setVolume} />
   </View>;
 }
 
@@ -89,7 +89,7 @@ export function PlaybackMenu({ onClose }: { onClose: () => void }) {
   const heading = (icon: React.ReactNode, text: string): React.ReactNode => <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>{icon}<Txt size={12} weight={700} ls={0.08} upper color={M.muted}>{text}</Txt></View>;
   return <Scrim onClose={onClose} light align="end">
     <SheetRise style={{ width: '100%', paddingHorizontal: 8, paddingBottom: 10 + insets.bottom, maxHeight: Math.min(height * 0.7, 560) + 10 }}>
-      <Glass {...menuGlass} radius={20} style={{ maxHeight: Math.min(height * 0.7, 560) }}>
+      <Glass {...menuGlass()} radius={20} style={{ maxHeight: Math.min(height * 0.7, 560) }}>
         <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }} showsVerticalScrollIndicator={false}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Txt size={16} weight={700} accessibilityRole="header">{t.playbackSettings}</Txt>
@@ -107,7 +107,7 @@ export function PlaybackMenu({ onClose }: { onClose: () => void }) {
           <View style={{ gap: 8 }}>
             {heading(null, t.crossfade)}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <RangeSlider style={{ flex: 1 }} label={t.crossfade} value={music.crossfade} max={MAX_CROSSFADE_SECONDS} step={1} fill={M.ink} track="rgba(255, 255, 255, 0.22)" onChange={music.setCrossfade} />
+              <RangeSlider style={{ flex: 1 }} label={t.crossfade} value={music.crossfade} max={MAX_CROSSFADE_SECONDS} step={1} fill={M.ink} track={M.track} thumb={M.solid} onChange={music.setCrossfade} />
               <Txt size={13} num align="right" style={{ minWidth: 42 }}>{music.crossfade === 0 ? t.off : formatContent(t.seconds, { seconds: music.crossfade })}</Txt>
             </View>
             <Note>{t.crossfadeHint}</Note>

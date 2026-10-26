@@ -24,7 +24,7 @@ export function SelectField({ label, value, options, onPick }: { label: string; 
   return <Press onPress={open} label={`${label}: ${shown}`} hint="Opens a list" role="button"
     style={{ minHeight: 34, maxWidth: 220, flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 14, paddingRight: 10, borderWidth: 1, borderColor: on ? 'transparent' : M.line, borderRadius: 10, backgroundColor: on ? M.ink : M.surface }}>
     <Txt size={13} weight={600} lines={1} color={on ? M.accentInk : M.ink} style={{ flexShrink: 1 }}>{shown}</Txt>
-    <ChevronDown size={12} color={on ? M.accentInk : '#cccccc'} strokeWidth={3} />
+    <ChevronDown size={12} color={on ? M.accentInk : M.chevron} strokeWidth={3} />
   </Press>;
 }
 

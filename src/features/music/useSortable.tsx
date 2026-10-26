@@ -50,7 +50,7 @@ export function useSortable({ count, onMove, onActive }: { count: number; onMove
   /** Style for a row: the dragged row follows the finger, rows in its way make room. */
   const rowStyle = (index: number): ViewStyle | undefined => {
     if (!drag) return undefined;
-    if (index === drag.from) return { transform: [{ translateY: drag.offset }], zIndex: 5, backgroundColor: 'rgba(60, 62, 80, 0.95)', boxShadow: '0 16px 40px rgba(0, 0, 0, 0.5)' };
+    if (index === drag.from) return { transform: [{ translateY: drag.offset }], zIndex: 5, backgroundColor: M.lift, boxShadow: M.shadowCover };
     if (drag.from < drag.over && index > drag.from && index <= drag.over) return { transform: [{ translateY: -height.current }] };
     if (drag.from > drag.over && index < drag.from && index >= drag.over) return { transform: [{ translateY: height.current }] };
     return undefined;

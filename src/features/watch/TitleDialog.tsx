@@ -7,8 +7,8 @@ import type { PlayTarget, ProgressEntry, WatchFile, WatchTitle } from '../../cor
 import { useLibrary } from '../../data/LibraryProvider';
 import { Grid } from '../../design/Grid';
 import { Press } from '../../design/primitives';
-import { clamp, WATCH_PHONE_MAX, WATCH_TABLET_MAX, watch as W } from '../../design/tokens';
-import { Txt } from '../../design/Txt';
+import { clamp, WATCH_PHONE_MAX, WATCH_TABLET_MAX, watchDarkPalette as W } from '../../design/tokens';
+import { DarkTxt as Txt } from '../../design/Txt';
 import Wave from '../../../modules/wave-media';
 import { useArt } from '../../platform/artwork';
 import { glassLook, RoundButton, TitleArt, WatchButton } from './ui';
@@ -98,8 +98,8 @@ export function TitleDialog({ title, progress, inList, similar, onClose, onPlay,
           <View style={{ position: 'absolute', left: phone ? 16 : 28, right: phone ? 16 : 28, bottom: phone ? 14 : 22 }}>
             <Txt size={clamp(26, width * 0.044, 48)} weight={800} lh={1.02} ls={-0.03} accessibilityRole="header" style={{ textShadowColor: 'rgba(0, 0, 0, 0.7)', textShadowOffset: { width: 0, height: 3 }, textShadowRadius: 22 }}>{title.title}</Txt>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginTop: 16 }}>
-              <WatchButton primary icon={Play} fill label={`${resuming ? copy.watchView.resume : copy.watchView.play}${resuming && title.kind === 'series' && main.season !== null ? ` ${episodeLabel(main)}` : ''}`} onPress={() => onPlay(target)} />
-              <RoundButton icon={inList ? Check : Plus} on={inList} label={inList ? copy.watchView.removeFromList : copy.watchView.addToList} onPress={() => onToggleList(title)} />
+              <WatchButton dark primary icon={Play} fill label={`${resuming ? copy.watchView.resume : copy.watchView.play}${resuming && title.kind === 'series' && main.season !== null ? ` ${episodeLabel(main)}` : ''}`} onPress={() => onPlay(target)} />
+              <RoundButton dark icon={inList ? Check : Plus} on={inList} label={inList ? copy.watchView.removeFromList : copy.watchView.addToList} onPress={() => onToggleList(title)} />
             </View>
           </View>
         </View>
@@ -132,7 +132,7 @@ export function TitleDialog({ title, progress, inList, similar, onClose, onPlay,
         {similar.length > 0 ? <View style={{ paddingHorizontal: side, paddingBottom: 26 }}>
           <Txt size={21} weight={700} accessibilityRole="header">{copy.watchView.moreLikeThis}</Txt>
           <Grid columns={phone ? 2 : 'auto'} minWidth={190} gap={10} style={{ marginTop: 12 }}>
-            {similar.map((item) => <Press key={item.id} onPress={() => onOpenTitle(item)} label={item.title} style={[glassLook, { width: '100%', aspectRatio: 16 / 9, borderRadius: 6, overflow: 'hidden', backgroundColor: W.surface }]}>
+            {similar.map((item) => <Press key={item.id} onPress={() => onOpenTitle(item)} label={item.title} style={[glassLook(true), { width: '100%', aspectRatio: 16 / 9, borderRadius: 6, overflow: 'hidden', backgroundColor: W.surface }]}>
               <TitleArt title={item} kind="card" />
               <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundImage: 'linear-gradient(to top, rgba(3, 17, 10, 0.88), rgba(3, 17, 10, 0) 58%)' }]} />
               <View style={{ position: 'absolute', left: 10, right: 10, bottom: 9 }}><Txt size={12} weight={700} lh={1.2} lines={2}>{item.title}</Txt></View>

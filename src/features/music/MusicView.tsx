@@ -1,15 +1,19 @@
 import { AudioLines, Disc3, Film, House, Library, ListMusic, Music2, Plus, Radio, Search } from 'lucide-react-native';
+import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef, type ComponentType, type ReactNode } from 'react';
 import { Animated, BackHandler, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { content as copy, formatContent } from '../../core/content';
 import { coversOf } from '../../core/musicHelpers';
+import { Dither } from '../../design/Dither';
 import { BlurLayer, Glass } from '../../design/Glass';
 import { Presence } from '../../design/Presence';
 import { Press } from '../../design/primitives';
-import { MUSIC_COMPACT_MAX, music as M } from '../../design/tokens';
+import { MUSIC_COMPACT_MAX, music as M, theme } from '../../design/tokens';
 import { Txt } from '../../design/Txt';
 import { ProfileControl } from '../shell/ProfileControl';
+import { Dock, dockSpace, dockTop } from './Dock';
+import { ImmersiveBar } from './Hero';
 import { HomePage } from './HomePage';
 import { LibraryPage } from './LibraryPage';
 import { CreatePlaylistDialog } from './Menus';
@@ -19,11 +23,13 @@ import { MusicNavContext, useMusicNav, type MusicNav, type MusicRoute } from './
 import { NowPlaying } from './NowPlaying';
 import { useOverlay } from './pageui';
 import { OverlayOutlet, OverlayProvider } from './overlays';
-import { MiniPlayer, PlayerBar } from './PlayerBar';
+import { PlayerBar } from './PlayerBar';
 import { SearchPage } from './SearchPage';
 import { LikedCover, Mosaic } from './ui';
 
 const t = copy.musicView;
+/** A hero page counts as scrolled past its picture (the name has reached the clock) after this many screen widths. */
+const HERO_PASSED = 0.62;
 
 type TabIcon = ComponentType<{ size?: number; color?: string }>;
 
@@ -31,20 +37,15 @@ type TabIcon = ComponentType<{ size?: number; color?: string }>;
 function Backdrop() {
   const { width, height } = useWindowDimensions();
   const image = [
-    `radial-gradient(${width * 0.6}px ${height * 0.5}px at 12% -8%, rgba(255, 92, 138, 0.28), transparent 70%)`,
-    `radial-gradient(${width * 0.55}px ${height * 0.55}px at 100% 8%, rgba(110, 90, 255, 0.26), transparent 70%)`,
-    `radial-gradient(${width * 0.7}px ${height * 0.6}px at 55% 120%, rgba(40, 190, 170, 0.2), transparent 70%)`,
+    `radial-gradient(${width * 0.6}px ${height * 0.5}px at 12% -8%, ${M.glowPink}, transparent 70%)`,
+    `radial-gradient(${width * 0.55}px ${height * 0.55}px at 100% 8%, ${M.glowViolet}, transparent 70%)`,
+    `radial-gradient(${width * 0.7}px ${height * 0.6}px at 55% 120%, ${M.glowTeal}, transparent 70%)`,
   ].join(', ');
-  return <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: M.bg, backgroundImage: image }]} />;
+  return <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: M.bg, backgroundImage: image }]}><Dither /></View>;
 }
 
-function NavButton({ icon: Icon, label, on, onPress, compact }: { icon: TabIcon; label: string; on: boolean; onPress: () => void; compact: boolean }) {
-  if (compact) {
-    return <Press onPress={onPress} label={label} selected={on} role="tab" style={{ flex: 1, minHeight: 52, paddingVertical: 4, alignItems: 'center', justifyContent: 'center', gap: 3, borderRadius: 12 }}>
-      <Icon size={24} color={on ? M.accent : M.muted} />
-      <Txt size={11} weight={600} color={on ? M.ink : M.muted}>{label}</Txt>
-    </Press>;
-  }
+/** A row of the wide layout's side list (a phone uses the dock instead). */
+function NavButton({ icon: Icon, label, on, onPress }: { icon: TabIcon; label: string; on: boolean; onPress: () => void }) {
   return <Press onPress={onPress} label={label} selected={on} role="tab" pressedStyle={{ backgroundColor: M.surface }}
     style={{ minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 12, borderRadius: 12, backgroundColor: on ? M.surfaceHover : 'transparent' }}>
     <Icon size={22} color={on ? M.accent : M.muted} />
@@ -59,7 +60,7 @@ function ModeSwitch({ onWatch, compact }: { onWatch: () => void; compact: boolea
       <Film size={15} color={M.muted} />
       {!compact ? <Txt size={13} color={M.muted}>{copy.modeSwitch.watch}</Txt> : null}
     </Press>
-    <View accessibilityRole="tab" accessibilityState={{ selected: true }} style={{ minHeight: compact ? 32 : 34, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: compact ? 10 : 14, borderRadius: 999, backgroundColor: '#fff' }}>
+    <View accessibilityRole="tab" accessibilityState={{ selected: true }} style={{ minHeight: compact ? 32 : 34, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: compact ? 10 : 14, borderRadius: 999, backgroundColor: M.solid }}>
       <AudioLines size={15} color={M.accentInk} />
       <Txt size={13} weight={700} color={M.accentInk}>{copy.modeSwitch.music}</Txt>
     </View>
@@ -117,8 +118,9 @@ function Shell({ route, compact, onWatch, scroller, top }: { route: MusicRoute; 
   const nav = useMusicNav();
   const insets = useSafeAreaInsets();
   const overlay = useOverlay();
+  const { width } = useWindowDimensions();
+  const [pastHero, setPastHero] = useState(false);
   const active = route.page === 'search' ? 'search' : route.page === 'home' || route.page === 'mood' || route.page === 'mix' ? 'home' : 'library';
-  const hasPlayer = music.track !== null;
   const page = ((): ReactNode => {
     switch (route.page) {
       case 'home': return <HomePage />;
@@ -132,10 +134,12 @@ function Shell({ route, compact, onWatch, scroller, top }: { route: MusicRoute; 
       case 'mood': return <MoodPage route={route} />;
     }
   })();
-  const homeButton = <NavButton key="home" compact={compact} icon={House} label={t.home} on={active === 'home'} onPress={() => nav.go({ page: 'home' })} />;
-  const searchButton = <NavButton key="search" compact={compact} icon={Search} label={t.search} on={active === 'search'} onPress={() => nav.go({ page: 'search' })} />;
-  const libraryButton = <NavButton key="library" compact={compact} icon={Library} label={t.yourLibrary} on={active === 'library'} onPress={() => nav.go({ page: 'library' })} />;
-  const bottomSpace = compact ? M.tabsHeight + insets.bottom + (hasPlayer ? M.miniHeight + 14 : 0) : 0;
+  const homeButton = <NavButton key="home" icon={House} label={t.home} on={active === 'home'} onPress={() => nav.go({ page: 'home' })} />;
+  const searchButton = <NavButton key="search" icon={Search} label={t.search} on={active === 'search'} onPress={() => nav.go({ page: 'search' })} />;
+  const libraryButton = <NavButton key="library" icon={Library} label={t.yourLibrary} on={active === 'library'} onPress={() => nav.go({ page: 'library' })} />;
+  const bottomSpace = compact ? dockSpace(insets.bottom) : 0;
+  // A singer's or film's page on a phone runs its picture up under the status bar, so it has no top bar and no panel behind it.
+  const immersive = compact && (route.page === 'artist' || route.page === 'album');
 
   const topbar = <View style={{ zIndex: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: compact ? 8 : 12, paddingHorizontal: compact ? 12 : 12, paddingTop: compact ? 8 + top : 10 + top }}>
     <View style={{ flex: compact ? undefined : 1, flexDirection: 'row', alignItems: 'center', gap: 11 }}>
@@ -151,21 +155,21 @@ function Shell({ route, compact, onWatch, scroller, top }: { route: MusicRoute; 
     <View style={{ flex: compact ? undefined : 1, alignItems: 'flex-end' }}><ProfileControl /></View>
   </View>;
 
-  const main = <View style={{ flex: 1, minHeight: 0, borderTopLeftRadius: compact ? 24 : 22, borderTopRightRadius: compact ? 24 : 22, borderBottomLeftRadius: compact ? 0 : 22, borderBottomRightRadius: compact ? 0 : 22, overflow: 'hidden', backgroundImage: 'linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))' }}>
-    <ScrollView ref={scroller} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: bottomSpace }} accessibilityLabel={t.music}>{page}</ScrollView>
+  const main = <View style={{ flex: 1, minHeight: 0, borderTopLeftRadius: compact ? 24 : 22, borderTopRightRadius: compact ? 24 : 22, borderBottomLeftRadius: compact ? 0 : 22, borderBottomRightRadius: compact ? 0 : 22, overflow: 'hidden', backgroundImage: immersive ? undefined : M.panel }}>
+    <ScrollView ref={scroller} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: bottomSpace }} accessibilityLabel={t.music}
+      scrollEventThrottle={immersive ? 64 : undefined} onScroll={immersive ? (event) => setPastHero(event.nativeEvent.contentOffset.y > width * HERO_PASSED) : undefined}>{page}</ScrollView>
   </View>;
 
   if (compact) {
     return <BlurLayer overlay={<>
-      <MiniPlayer />
-      <Glass radius={[22, 22, 0, 0]} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', justifyContent: 'space-around', paddingTop: 6, paddingHorizontal: 10, paddingBottom: 6 + insets.bottom }}>
-        {homeButton}{searchButton}{libraryButton}
-      </Glass>
+      {immersive ? <ImmersiveBarFor route={route as Extract<MusicRoute, { page: 'artist' | 'album' }>} scrolled={pastHero} /> : null}
+      <Dock />
       <Toast />
       <OverlayOutlet />
     </>}>
       <Backdrop />
-      <View style={{ flex: 1, gap: 6 }}>{topbar}{main}</View>
+      {immersive ? <StatusBar style={theme.mode === 'light' && pastHero ? 'dark' : 'light'} /> : null}
+      {immersive ? main : <View style={{ flex: 1, gap: 6 }}>{topbar}{main}</View>}
     </BlurLayer>;
   }
 
@@ -203,6 +207,17 @@ function Shell({ route, compact, onWatch, scroller, top }: { route: MusicRoute; 
   </BlurLayer>;
 }
 
+/** The pinned back and "…" buttons of a singer's or film's page; its menu also offers radio for that singer or film. */
+function ImmersiveBarFor({ route, scrolled }: { route: Extract<MusicRoute, { page: 'artist' | 'album' }>; scrolled: boolean }) {
+  const { index } = useMusic();
+  if (route.page === 'artist') {
+    const artist = index.artistByKey.get(route.key);
+    return <ImmersiveBar scrolled={scrolled} trackIds={artist?.trackIds ?? []} source={artist ? { radio: { seed: { kind: 'artist', value: artist.name }, label: `${artist.name} Radio` } } : undefined} />;
+  }
+  const album = index.albumById.get(route.id);
+  return <ImmersiveBar scrolled={scrolled} trackIds={album?.trackIds ?? []} source={album ? { radio: { seed: { kind: 'album', value: album.id }, label: `${album.name} Radio` } } : undefined} />;
+}
+
 function SideRow({ active, onPress, title, subtitle, art }: { active: boolean; onPress: () => void; title: string; subtitle: string; art: ReactNode }) {
   return <Press onPress={onPress} label={title} pressedStyle={{ backgroundColor: M.surface }} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6, paddingHorizontal: 8, borderRadius: 12, backgroundColor: active ? M.surfaceHover : 'transparent' }}>
     {art}
@@ -224,8 +239,8 @@ function Toast() {
   useEffect(() => { if (text) { fade.setValue(0); Animated.timing(fade, { toValue: 1, duration: 200, useNativeDriver: true }).start(); } }, [text, fade]);
   if (!text) return null;
   const compact = width <= MUSIC_COMPACT_MAX;
-  return <Animated.View pointerEvents="none" accessibilityLiveRegion="polite" style={{ position: 'absolute', alignSelf: 'center', bottom: compact ? M.tabsHeight + M.miniHeight + 24 + insets.bottom : 110, maxWidth: Math.min(520, width - 32), opacity: fade, zIndex: 120 }}>
-    <View style={{ paddingVertical: 11, paddingHorizontal: 18, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)', backgroundColor: 'rgba(30, 32, 44, 0.92)', boxShadow: '0 14px 40px rgba(0, 0, 0, 0.5)' }}>
+  return <Animated.View pointerEvents="none" accessibilityLiveRegion="polite" style={{ position: 'absolute', alignSelf: 'center', bottom: compact ? dockTop(insets.bottom) + 14 : 110, maxWidth: Math.min(520, width - 32), opacity: fade, zIndex: 120 }}>
+    <View style={{ paddingVertical: 11, paddingHorizontal: 18, borderRadius: 999, borderWidth: 1, borderColor: M.floatBorder, backgroundColor: M.float, boxShadow: M.shadowHero }}>
       <Txt size={14} align="center">{text}</Txt>
     </View>
   </Animated.View>;

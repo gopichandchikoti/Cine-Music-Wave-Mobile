@@ -43,6 +43,18 @@ export type MusicPalette = {
   field: string;
   track: string;
   dimmer: string;
+  /** the ring behind a spinner, and the small chevron on a menu button */
+  ring: string;
+  chevron: string;
+  /** a row being dragged to a new place */
+  lift: string;
+  /** the full-screen player's page colour, and the track of a spinner drawn on a `solid` fill */
+  stage: string;
+  onSolidTrack: string;
+  /** the shadows under the player's cover, a small cover beside text, and the round play button */
+  shadowArt: string;
+  shadowThumb: string;
+  shadowButton: string;
   /** destructive text */
   danger: string;
   /** toast and floating chips */
@@ -58,8 +70,6 @@ export type MusicPalette = {
   glowTeal: string;
   /** the rounded panel that holds a page */
   panel: string;
-  tabsHeight: number;
-  miniHeight: number;
 };
 
 const musicDark: MusicPalette = {
@@ -78,6 +88,14 @@ const musicDark: MusicPalette = {
   field: 'rgba(0, 0, 0, 0.25)',
   track: 'rgba(255, 255, 255, 0.22)',
   dimmer: 'rgba(4, 4, 10, 0.55)',
+  ring: 'rgba(255, 255, 255, 0.2)',
+  chevron: '#cccccc',
+  lift: 'rgba(60, 62, 80, 0.95)',
+  stage: '#07070b',
+  onSolidTrack: 'rgba(26, 6, 16, 0.25)',
+  shadowArt: '0 30px 80px rgba(0, 0, 0, 0.6)',
+  shadowThumb: '0 8px 20px rgba(0, 0, 0, 0.5)',
+  shadowButton: '0 6px 20px rgba(0, 0, 0, 0.4)',
   danger: '#ff8a9c',
   float: 'rgba(30, 32, 44, 0.92)',
   floatBorder: 'rgba(255, 255, 255, 0.2)',
@@ -88,12 +106,10 @@ const musicDark: MusicPalette = {
   glowViolet: 'rgba(110, 90, 255, 0.26)',
   glowTeal: 'rgba(40, 190, 170, 0.2)',
   panel: 'linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))',
-  tabsHeight: 66,
-  miniHeight: 66,
 };
 
-// Light: a tinted neutral page (never pure white), ink at #14151f (17.9:1 on the page), muted text 5.8:1, the accent deepened to #d6215d
-// because the dark theme's #ff5c8a is only 2.7:1 on a light page (the deepened pink is 4.5:1, and white on it is 5.0:1).
+// Light: a tinted neutral page (never pure white). Measured contrast on the page: ink 16.6:1, muted text 5.6:1, the accent #d6215d 4.5:1
+// (the dark theme's #ff5c8a is too pale for a light page), text on the accent 4.8:1, danger text 5.4:1.
 const musicLight: MusicPalette = {
   bg: '#f4f4f8',
   ink: '#14151f',
@@ -110,6 +126,14 @@ const musicLight: MusicPalette = {
   field: 'rgba(20, 21, 31, 0.05)',
   track: 'rgba(20, 21, 31, 0.16)',
   dimmer: 'rgba(20, 21, 31, 0.38)',
+  ring: 'rgba(20, 21, 31, 0.16)',
+  chevron: 'rgba(20, 21, 31, 0.55)',
+  lift: 'rgba(255, 255, 255, 0.98)',
+  stage: '#eceef5',
+  onSolidTrack: 'rgba(250, 250, 253, 0.3)',
+  shadowArt: '0 24px 60px rgba(20, 21, 31, 0.3)',
+  shadowThumb: '0 6px 16px rgba(20, 21, 31, 0.22)',
+  shadowButton: '0 5px 16px rgba(20, 21, 31, 0.28)',
   danger: '#c4153c',
   float: 'rgba(255, 255, 255, 0.97)',
   floatBorder: 'rgba(20, 21, 31, 0.12)',
@@ -120,8 +144,6 @@ const musicLight: MusicPalette = {
   glowViolet: 'rgba(110, 90, 255, 0.13)',
   glowTeal: 'rgba(40, 190, 170, 0.11)',
   panel: 'linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.42))',
-  tabsHeight: 66,
-  miniHeight: 66,
 };
 
 export type WatchPalette = {
@@ -147,6 +169,16 @@ export type WatchPalette = {
   /** floating notices */
   float: string;
   shadow: string;
+  /** quiet button fills (rest, pressed) and the softer fill of an empty-state action */
+  fill: string;
+  fillPressed: string;
+  fillSoft: string;
+  /** an icon-only round button's fill, and a ghost button's rim */
+  round: string;
+  rim: string;
+  /** the two green glows behind the page */
+  glowA: string;
+  glowB: string;
 };
 
 /** Watch: every background is a shade of green (web: .watch-shell variables). */
@@ -168,10 +200,17 @@ const watchDark: WatchPalette = {
   track: 'rgba(236, 253, 243, 0.25)',
   float: 'rgba(10, 42, 27, 0.96)',
   shadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+  fill: 'rgba(236, 253, 243, 0.16)',
+  fillPressed: 'rgba(236, 253, 243, 0.26)',
+  fillSoft: 'rgba(236, 253, 243, 0.12)',
+  round: 'rgba(3, 17, 10, 0.55)',
+  rim: 'rgba(255, 255, 255, 0.22)',
+  glowA: 'rgba(52, 229, 138, 0.13)',
+  glowB: 'rgba(25, 194, 109, 0.1)',
 };
 
-// Light: pale green paper. Ink #0b2417 is 15.7:1 on the page, muted #456554 is 5.6:1, the accent #0b7a42 is 4.9:1 (the dark theme's #34e58a is
-// 1.3:1 on paper), and #ffffff on the accent is 5.4:1.
+// Light: pale green paper. Measured contrast on the page: ink 14.8:1, muted 5.9:1, the accent #0b7a42 4.9:1 (the dark theme's #34e58a is
+// too pale for paper), text on the accent 5.4:1, warning text 5.0:1.
 const watchLight: WatchPalette = {
   bg: '#eef5f0',
   raised: '#fbfdfb',
@@ -190,6 +229,13 @@ const watchLight: WatchPalette = {
   track: 'rgba(11, 36, 23, 0.2)',
   float: 'rgba(255, 255, 255, 0.97)',
   shadow: '0 8px 24px rgba(11, 36, 23, 0.18)',
+  fill: 'rgba(11, 36, 23, 0.08)',
+  fillPressed: 'rgba(11, 36, 23, 0.14)',
+  fillSoft: 'rgba(11, 36, 23, 0.06)',
+  round: 'rgba(255, 255, 255, 0.78)',
+  rim: 'rgba(11, 36, 23, 0.2)',
+  glowA: 'rgba(11, 122, 66, 0.1)',
+  glowB: 'rgba(11, 122, 66, 0.07)',
 };
 
 export type GlassPalette = {
@@ -247,12 +293,15 @@ export const theme: { mode: ThemeMode } = { mode: 'dark' };
 
 /** Makes `mode` the active theme. Call it before the tree renders; the palettes above change in place. */
 export function applyTheme(mode: ThemeMode): void {
-  if (theme.mode === mode && music.bg === (mode === 'dark' ? musicDark.bg : musicLight.bg)) return;
+  if (theme.mode === mode) return;
   theme.mode = mode;
   Object.assign(music, mode === 'dark' ? musicDark : musicLight);
   Object.assign(watch, mode === 'dark' ? watchDark : watchLight);
   Object.assign(glass, mode === 'dark' ? glassDark : glassLight);
 }
+
+/** The ink colour at `alpha`: white on dark (exactly the old rgba(255, 255, 255, a) strings), the light theme's ink on light. */
+export const inkAlpha = (alpha: number): string => (theme.mode === 'dark' ? `rgba(255, 255, 255, ${alpha})` : `rgba(20, 21, 31, ${alpha})`);
 
 /** The compact (phone) layout of Music applies at this width and below, exactly like the web's useMediaQuery('(max-width: 860px)'). */
 export const MUSIC_COMPACT_MAX = 860;

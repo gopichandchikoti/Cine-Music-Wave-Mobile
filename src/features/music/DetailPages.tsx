@@ -10,6 +10,7 @@ import { Grid } from '../../design/Grid';
 import { clamp, music as M } from '../../design/tokens';
 import { Txt } from '../../design/Txt';
 import { AlbumCard, ArtistCard } from './Cards';
+import { AlbumHeroPage, ArtistHeroPage } from './HeroPages';
 import { useMusic } from './musicContext';
 import { useMusicNav, type MusicRoute } from './musicNav';
 import { EmptyNote, IconButton, LikedCover, Mosaic, Cover, Pill } from './ui';
@@ -27,7 +28,7 @@ function Header({ cover, kind, title, meta, children, round = false }: { cover: 
   const coverWidth = nav.compact ? Math.min(width * 0.62, 240) : clamp(150, width * 0.22, 232);
   return <View style={{ flexDirection: nav.compact ? 'column' : 'row', flexWrap: 'wrap', alignItems: nav.compact ? 'flex-start' : 'flex-end', gap: nav.compact ? 14 : 22, paddingTop: 6 }}>
     {nav.canGoBack ? <View style={{ width: '100%', marginLeft: -8 }}><IconButton icon={ArrowLeft} label={t.back} onPress={nav.back} size={44} iconSize={22} color={M.ink} /></View> : null}
-    <View style={[{ width: coverWidth, marginTop: nav.compact ? 4 : 18, borderRadius: round ? coverWidth / 2 : 14, overflow: 'visible', boxShadow: '0 24px 60px rgba(0, 0, 0, 0.5)' }, nav.compact ? { alignSelf: 'center' } : null]}>{cover}</View>
+    <View style={[{ width: coverWidth, marginTop: nav.compact ? 4 : 18, borderRadius: round ? coverWidth / 2 : 14, overflow: 'visible', boxShadow: M.shadowHero }, nav.compact ? { alignSelf: 'center' } : null]}>{cover}</View>
     <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: nav.compact ? undefined : 280, minWidth: 0, width: nav.compact ? '100%' : undefined, gap: 10 }}>
       <Txt family="mono" weight={500} size={11} ls={0.14} upper color={M.muted}>{kind}</Txt>
       {typeof title === 'string' ? <Txt size={clamp(30, width * 0.05, 60)} weight={800} lh={1.02} ls={-0.035} accessibilityRole="header">{title}</Txt> : title}
@@ -59,6 +60,7 @@ export function AlbumPage({ route }: { route: Extract<MusicRoute, { page: 'album
   const tracks = useMemo(() => (album?.trackIds ?? []).flatMap((id) => music.index.byId.get(id) ?? []), [album, music.index]);
   if (!album) return <Page><EmptyNote>{t.notFound}</EmptyNote></Page>;
   const context: PlayContext = { kind: 'album', id: album.id, label: album.name };
+  if (nav.compact) return <AlbumHeroPage album={album} tracks={tracks} context={context} />;
   return <Page>
     <Header cover={<Cover albumId={album.id} cover={album.cover} label={album.name} radius={14} />} kind={t.albumLabel} title={album.name}
       meta={[album.year, songCount(tracks.length), lengthOf(tracks)].filter(Boolean).join(' · ')}>
@@ -87,6 +89,7 @@ export function ArtistPage({ route }: { route: Extract<MusicRoute, { page: 'arti
   }, [tracks, index, route.key]);
   if (!artist) return <Page><EmptyNote>{t.notFound}</EmptyNote></Page>;
   const context: PlayContext = { kind: 'artist', id: artist.key, label: artist.name };
+  if (nav.compact) return <ArtistHeroPage artist={artist} tracks={tracks} popular={popular} albums={albums} together={together} context={context} />;
   const grid = (items: ReactNode[]): ReactNode => <Grid columns={nav.compact ? 2 : 'auto'} minWidth={168} gap={nav.compact ? 8 : 14} rowGap={nav.compact ? 14 : 18}>{items}</Grid>;
   return <Page>
     <Header round cover={<Mosaic covers={coversOf(tracks)} label={artist.name} radius={9999} />} kind={t.singerLabel} title={artist.name} meta={[songCount(tracks.length), `${albums.length} ${albums.length === 1 ? t.filmOne : t.filmMany}`].join(' · ')}>

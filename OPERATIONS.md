@@ -29,6 +29,10 @@ There is no server. Operating the app means building it, installing it, keeping 
 - No analytics, crash reporting, update service or remote fonts. Fonts and icons are bundled.
 - Do not commit `fixtures-private/`, `validation/` (screenshots can show private titles), `artifacts/`, `.env*`, keystores or provisioning profiles; `.gitignore` already excludes them.
 - Third-party notices: run a license listing of the installed runtime dependencies before sharing the APK and keep their notices with it.
+- **No device backup.** The app is excluded from Android backups (`allowBackup=false`), so `adb backup` and cloud restore do not copy its database. The cost: moving to a new phone does not carry likes, playlists or Watch progress; they start empty there.
+- **Signing key.** Every APK this project builds is signed with Android's public debug key. That is fine on your own phone and emulator, but anyone holding the same public key could build an APK that Android treats as an update to this one. **Before giving the APK to anyone**, create a private release keystore (`keytool -genkeypair`), keep it and its password outside the repository (`*.keystore` and `*.jks` are ignored), point the Gradle release signing at it, and store a backup of it: losing it means users must uninstall to update.
+- **Known build-tool advisories.** `pnpm audit --prod` reports two high advisories, `node-forge` (no patched release exists) and `zod` (the fix is a new major version that Expo's command-line tool cannot use). Both arrive only through `@expo/cli`, which runs on your computer at build time; neither is in the app's JavaScript bundle (checked by searching the release bundle for them). Recheck after each Expo upgrade.
+- The `cinemusicwave://` link opens the app (Android lists it as a browsable link). The app does not read what the link carries, so it only brings the app to the front. It is kept because the development build uses the same scheme.
 
 ## When something is wrong
 

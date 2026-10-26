@@ -6,40 +6,53 @@ import type { WatchTitle } from '../../core/watchTypes';
 import { primaryFile } from '../../core/watchModel';
 import { useLibrary } from '../../data/LibraryProvider';
 import { Press } from '../../design/primitives';
-import { watch as W } from '../../design/tokens';
+import { theme, watch as W, watchDarkPalette as WD } from '../../design/tokens';
 import { Txt } from '../../design/Txt';
 import Wave from '../../../modules/wave-media';
 import { useArt } from '../../platform/artwork';
 
 /**
  * Every button in the web's Watch shell gets a glass rim (Entertainment.css): a faint 145° sheen, a 1px light border and a highlight along
- * the top edge. These are those values, so each control here has the same edge.
+ * the top edge. These are those values, so each control here has the same edge. `dark` keeps the dark look over posters and video.
+ * In the light theme the sheen is nearly white, so a filled (primary) button leaves it out and keeps its own colour.
  */
-export const glassLook: ViewStyle = {
-  borderWidth: 1,
-  borderColor: 'rgba(255, 255, 255, 0.22)',
-  backgroundImage: 'linear-gradient(145deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.045) 60%, rgba(255, 255, 255, 0.10))',
-  boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 4px 16px rgba(0, 0, 0, 0.15)',
-};
+export function glassLook(dark = false, filled = false): ViewStyle {
+  if (!dark && theme.mode === 'light') {
+    return {
+      borderWidth: 1,
+      borderColor: filled ? 'transparent' : 'rgba(11, 36, 23, 0.14)',
+      backgroundImage: filled ? undefined : 'linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.6) 60%, rgba(255, 255, 255, 0.75))',
+      boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(11, 36, 23, 0.05), 0 4px 16px rgba(11, 36, 23, 0.08)',
+    };
+  }
+  return {
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.22)',
+    backgroundImage: 'linear-gradient(145deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.045) 60%, rgba(255, 255, 255, 0.10))',
+    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 4px 16px rgba(0, 0, 0, 0.15)',
+  };
+}
 
 type Icon = ComponentType<{ size?: number; color?: string; fill?: string }>;
 
 /** web: .watch-button (with .is-primary) */
-export function WatchButton({ label, icon: Icon, onPress, primary, disabled, fill, style }: { label: string; icon?: Icon; onPress?: () => void; primary?: boolean; disabled?: boolean; fill?: boolean; style?: StyleProp<ViewStyle> }) {
-  const ink = primary ? W.accentInk : W.ink;
+export function WatchButton({ label, icon: Icon, onPress, primary, disabled, fill, dark = false, style }: { label: string; icon?: Icon; onPress?: () => void; primary?: boolean; disabled?: boolean; fill?: boolean; dark?: boolean; style?: StyleProp<ViewStyle> }) {
+  const palette = dark ? WD : W;
+  const ink = primary ? palette.accentInk : palette.ink;
   return <Press onPress={onPress} disabled={disabled} label={label} pressScale={0.98}
-    style={[glassLook, { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, paddingHorizontal: 22, borderRadius: 7, backgroundColor: primary ? W.accent : 'rgba(236, 253, 243, 0.16)' }, style]}
-    pressedStyle={{ backgroundColor: primary ? W.accentHover : 'rgba(236, 253, 243, 0.26)' }}>
+    style={[glassLook(dark, primary), { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, paddingHorizontal: 22, borderRadius: 7, backgroundColor: primary ? palette.accent : palette.fill }, style]}
+    pressedStyle={{ backgroundColor: primary ? palette.accentHover : palette.fillPressed }}>
     {Icon ? <Icon size={20} color={ink} fill={fill ? ink : 'none'} /> : null}
     <Txt size={16} weight={700} color={ink}>{label}</Txt>
   </Press>;
 }
 
 /** web: .watch-round, a 40px circle for icon-only actions. */
-export function RoundButton({ label, icon: Icon, onPress, primary, ghost, size = 40, iconSize = 20, fill, on }: { label: string; icon: Icon; onPress?: () => void; primary?: boolean; ghost?: boolean; size?: number; iconSize?: number; fill?: boolean; on?: boolean }) {
-  const ink = primary ? W.accentInk : W.ink;
+export function RoundButton({ label, icon: Icon, onPress, primary, ghost, size = 40, iconSize = 20, fill, on, dark = false }: { label: string; icon: Icon; onPress?: () => void; primary?: boolean; ghost?: boolean; size?: number; iconSize?: number; fill?: boolean; on?: boolean; dark?: boolean }) {
+  const palette = dark ? WD : W;
+  const ink = primary ? palette.accentInk : palette.ink;
   return <Press onPress={onPress} label={label} selected={on} pressScale={0.94}
-    style={[ghost ? { borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.22)' } : glassLook, { width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: primary ? W.accent : ghost ? 'transparent' : 'rgba(3, 17, 10, 0.55)' }]}>
+    style={[ghost ? { borderWidth: 1, borderColor: palette.rim } : glassLook(dark, primary), { width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: primary ? palette.accent : ghost ? 'transparent' : palette.round }]}>
     <Icon size={iconSize} color={ink} fill={fill ? ink : 'none'} />
   </Press>;
 }
@@ -61,16 +74,18 @@ export function TitleArt({ title, kind, radius = 0 }: { title: WatchTitle; kind:
 }
 
 /** A film or series as a 16:9 card with its name over the bottom, a green NEW badge and a progress bar (web: .watch-card). */
-function TitleCardView({ title, progress, isNew, width, onOpen }: { title: WatchTitle; progress: number; isNew: boolean; width?: number | `${number}%`; onOpen: (title: WatchTitle) => void }) {
+function TitleCardView({ title, progress, isNew, width, onOpen }: { title: WatchTitle; progress: number; isNew: boolean; width?: number | `${number}%`; onOpen: (title: WatchTitle) => void; scheme: string }) {
+  // A card is a picture with its name on a dark fade, so it reads the dark palette in both themes. `scheme` only makes the memo
+  // below draw the card again when the theme changes.
   return <Press onPress={() => onOpen(title)} label={title.title}
-    style={[glassLook, { width, aspectRatio: 16 / 9, borderRadius: 6, overflow: 'hidden', backgroundColor: W.surface }]}>
+    style={[glassLook(true), { width, aspectRatio: 16 / 9, borderRadius: 6, overflow: 'hidden', backgroundColor: WD.surface }]}>
     <TitleArt title={title} kind="card" />
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundImage: 'linear-gradient(to top, rgba(3, 17, 10, 0.88), rgba(3, 17, 10, 0) 58%)' }]} />
-    {isNew ? <View style={{ position: 'absolute', top: 8, left: 8, paddingVertical: 2, paddingHorizontal: 7, borderRadius: 4, backgroundColor: W.accent }}><Txt size={10} weight={800} ls={0.08} upper color={W.accentInk}>{copy.watchView.newBadge}</Txt></View> : null}
+    {isNew ? <View style={{ position: 'absolute', top: 8, left: 8, paddingVertical: 2, paddingHorizontal: 7, borderRadius: 4, backgroundColor: WD.accent }}><Txt size={10} weight={800} ls={0.08} upper color={WD.accentInk}>{copy.watchView.newBadge}</Txt></View> : null}
     <View style={{ position: 'absolute', left: 10, right: 10, bottom: 9 }}>
-      <Txt size={12} weight={700} lh={1.2} lines={2} style={{ textShadowColor: 'rgba(0, 0, 0, 0.8)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 8 }}>{title.title}</Txt>
+      <Txt size={12} weight={700} lh={1.2} lines={2} color="#ffffff" style={{ textShadowColor: 'rgba(0, 0, 0, 0.8)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 8 }}>{title.title}</Txt>
     </View>
-    {progress > 0 ? <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 4, backgroundColor: 'rgba(236, 253, 243, 0.25)' }}><View style={{ width: `${Math.round(progress * 100)}%`, height: '100%', backgroundColor: W.accent }} /></View> : null}
+    {progress > 0 ? <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 4, backgroundColor: WD.track }}><View style={{ width: `${Math.round(progress * 100)}%`, height: '100%', backgroundColor: WD.accent }} /></View> : null}
   </Press>;
 }
 export const TitleCard = memo(TitleCardView);
@@ -92,8 +107,8 @@ export function Rail({ title, gutter, children }: { title: string; gutter: numbe
         contentContainerStyle={{ gap: 8, paddingTop: 10, paddingBottom: 14, paddingHorizontal: gutter }}>
         {children}
       </ScrollView>
-      {more.back ? <Press onPress={() => slide(-1)} label={copy.watchView.scrollLeft} style={{ position: 'absolute', left: 0, top: 10, bottom: 14, width: arrowWidth, alignItems: 'center', justifyContent: 'center', opacity: 0.9, backgroundImage: 'linear-gradient(to right, rgba(3, 17, 10, 0.88), rgba(3, 17, 10, 0))' }}><ChevronLeft size={30} color={W.ink} /></Press> : null}
-      {more.forward ? <Press onPress={() => slide(1)} label={copy.watchView.scrollRight} style={{ position: 'absolute', right: 0, top: 10, bottom: 14, width: arrowWidth, alignItems: 'center', justifyContent: 'center', opacity: 0.9, backgroundImage: 'linear-gradient(to left, rgba(3, 17, 10, 0.88), rgba(3, 17, 10, 0))' }}><ChevronRight size={30} color={W.ink} /></Press> : null}
+      {more.back ? <Press onPress={() => slide(-1)} label={copy.watchView.scrollLeft} style={{ position: 'absolute', left: 0, top: 10, bottom: 14, width: arrowWidth, alignItems: 'center', justifyContent: 'center', opacity: 0.9, backgroundImage: `linear-gradient(to right, rgba(${W.veil}, 0.88), rgba(${W.veil}, 0))` }}><ChevronLeft size={30} color={W.ink} /></Press> : null}
+      {more.forward ? <Press onPress={() => slide(1)} label={copy.watchView.scrollRight} style={{ position: 'absolute', right: 0, top: 10, bottom: 14, width: arrowWidth, alignItems: 'center', justifyContent: 'center', opacity: 0.9, backgroundImage: `linear-gradient(to left, rgba(${W.veil}, 0.88), rgba(${W.veil}, 0))` }}><ChevronRight size={30} color={W.ink} /></Press> : null}
     </View>
   </View>;
 }

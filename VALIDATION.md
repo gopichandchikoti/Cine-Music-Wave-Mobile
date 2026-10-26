@@ -93,15 +93,60 @@ Evidence files are in `validation\screenshots\2026-10-26-springs\`.
 
 Limits of this evidence: the motion was judged from recorded frames on an emulator (the recorder fell back to 720x1280), not by feel on a phone. The recordings did not catch a clear frame of the menu sinking, so the menu exit is evidenced only by the dialog frames. A tab's label colour changes the moment it is chosen, while the highlight needs about a third of a second to arrive: a visible detail, not something a test covers. Reduced motion was not switched on. Strix did not run. iOS was not built.
 
+## Themes and the new Music screens, 2026-10-26
+
+Built with `scripts\build-android.ps1` (Gradle build successful, release APK) and installed over the previous build with `adb install -r` on `CineMusicWave_TestPhone` (app data kept). The tools were called directly from `node_modules\.bin`.
+
+| Check | Result |
+| --- | --- |
+| `tsc --noEmit` | exit 0 |
+| `oxlint src modules App.tsx index.ts` | exit 0 |
+| `tsx --test tests/*.test.ts` | 18 of 18 pass: 12 earlier tests plus 6 new in `tests/theme.test.ts` (the dark palette is the approved one; the light palette and the live objects switch and switch back; WCAG AA contrast of ink, muted, accent, text on accent, danger or warning, and muted on a raised surface, for Music and Watch in both themes) |
+| `node scripts/audit-standards.mjs` | 0 errors, 3 warnings (two files over 400 lines, and privacy and terms pages, which do not apply to an offline app), 4 notices |
+| Dark theme after the change | Music Home, singer page, film page and Watch Home match the approved look; only the bottom bar (now the dock) differs by design (`01`, `02`, `03`, `04`, `13`) |
+| Switch to light and back, from the account menu | Music and Watch changed in place with playback and the queue untouched; the status bar icons changed colour; the choice survived an install over the running app and the relaunch that follows (it came up light) |
+| Singer page, dark and light | picture under the status bar, tinted page, three round buttons, Featured album, Top songs with the next column showing, albums, all songs (`02`, `06`) |
+| Film page, with and without a cover | dark with artwork (`03`); light with no cover, where the hero is the name-coloured tile (`09`) |
+| Your Library | section buttons with "All" open, shelves with title chevrons (`08`) |
+| Dock | Home and Your Library menu grows out of the button (`07`); mini player pill shows the song and play and next |
+| Watch in light | header, tabs, billboard with a pale veil, poster cards still dark with white titles (`10`); the Play button is solid green |
+| Title page and player in light | both stay dark; the video played (0:05 of 0:08 on screen) with the dark controls (`11`, `12`) |
+| Wide layout (1600x2560 at 280 dpi, then reset) | side list and player bar, dark and light (`14`, `15`); display size and density were reset after |
+
+Evidence files are in `validation\screenshots\2026-10-26-themes-and-music-screens\`.
+
+Problems found and fixed on the device: the Watch "Play" button was washed out in the light theme (the light glass sheen covered its green fill; a filled button now leaves the sheen out); the singer page had an empty column to the left of the song covers (the track-number column; now removed there) and the next Top songs column barely showed (now 16% of the shelf); content scrolling under the status bar collided with the clock (a fade of the page colour now appears once the picture has scrolled away).
+
+Limits of this evidence: one emulator, one library (the owner's test files), Android only; phone and one wide size. Not exercised: the light theme on the wide singer and film pages (they keep the earlier headers), playing a song with the light full-screen player open, TalkBack and reduced motion with the new screens, a library with no covers at all, and a profile with no songs in the light theme. A first attempt to switch themes once showed a frame in which the menu was still fading while the page had not yet changed, and my next adb input pulled down the notification shade; three further switches with proper waits (light to dark, dark to light, light to dark) behaved correctly, but that first frame was not explained. A back-key press after a display-size change also left the app (the size change had reset it to Home), and two adb taps then opened Google Calendar's welcome screen on the emulator; nothing was entered there. Strix did not run. iOS was not built.
+
+## Background banding and the dither layer, 2026-10-26
+
+Measured on a full-resolution emulator screenshot of Music Home (a column of pixels at the left edge, 1,570 px tall): before, 120 colour changes with the longest flat run 130 px and most runs 16 px (steps of 1 to 3 levels, i.e. visible bands); a plain background patch of 30 x 30 px held 12 distinct colours (standard deviation 0.44). After the dither layer the same patch held 39 distinct colours (standard deviation 1.62) and the screen showed no bands and no visible grain. The first version (`resizeMode="repeat"`) changed nothing (identical pixel statistics), so the noise is now a grid of plain images. `tsc` and `oxlint` exit 0, the 18 tests pass, and the release build installed and ran. Not measured: the effect on the Watch backdrop and the full-screen player (they use the same component but were not sampled), other screen densities.
+
 ## Not run
 
 - iOS in any form (`IOS_SETUP.md`); a physical Android device; Pixel or Samsung hardware.
 - Sleep timer, crossfade, autoplay, radio, shuffle and repeat, speed and picture menus, subtitle tracks (the test clips have none), My List add and remove, season picker, Settings and My profile dialogs.
 - Picking files or folders by hand; an unavailable (moved or deleted) file.
-- TalkBack, reduced motion (the code reads the system setting; it was not switched on in the emulator), font scaling, dark/light system themes, low-memory and long-duration playback, interruptions (calls, headphones removed).
+- TalkBack, reduced motion (the code reads the system setting; it was not switched on in the emulator), font scaling, following the phone's dark or light setting (not offered), low-memory and long-duration playback, interruptions (calls, headphones removed).
 - A signed production release or a Play Store build.
 - Automated UI tests: none exist.
 
 ## Screenshots
 
 `validation\screenshots\` (git-ignored: they show the owner's media titles). `web-reference-744\` holds the web app at 744x1240 for the responsive comparison.
+
+## Security pass - 2026-10-26
+
+| Check | Result |
+| --- | --- |
+| Secret search, working tree and the one commit | None found (only a placeholder in `AGENTS.md`'s instructions). `.env*`, keystores, `artifacts/`, `fixtures-private/` and `validation/` are ignored. |
+| `pnpm audit --prod` | 2 high advisories, both through `@expo/cli` (build tool): `node-forge` GHSA-86w9-cpqp-85rv (no patched version exists) and `zod` GHSA-mrhx-c7xc-m3w5 (fix is a major version). Searching the release APK's JavaScript bundle for `node-forge`, `forge.pki`, `ZodError`, `@expo/cli` and `devcert` found none, while `react-native` (24) and the app's own `WaveMedia` (1) were found, so the search works. Not reachable from the installed app. |
+| Network code | None in `src`, `App.tsx`, `index.ts` or the module wrapper (`tests/security.test.ts` enforces it). The bundle's `fetch` and `XMLHttpRequest` strings come from React Native's own runtime. The release manifest has no `INTERNET` permission. |
+| Built release APK (`aapt2 dump permissions` and `xmltree`) | No `INTERNET`; `allowBackup=false`; no `debuggable`; exported: the launcher activity (with the `cinemusicwave://` link) and AndroidX `ProfileInstallReceiver` (system-protected). Permissions: media reading, foreground media playback, audio settings, vibrate, wake lock, network state. |
+| `tsx --test tests/*.test.ts` | 25 passed (18 earlier + 7 security) |
+| `tsc --noEmit`, `oxlint` | Clean |
+| `scripts/audit-standards.mjs` | 0 errors, 3 warnings that were already there (two long files and "no privacy or terms page"; the app has no accounts, uploads, analytics or network, which is when UI-12 requires one) |
+| On the emulator | Installed over the existing app without wiping data (`install -r`). Opened with the "CH" profile, library and covers intact. No `FATAL EXCEPTION` and an empty crash buffer. Device package flags lost `ALLOW_BACKUP`. The full-screen player's backdrop was cover-tinted, so the picture colour read still works through the new path confinement. Airplane mode was left off and no display size was changed. |
+
+Not verified: iOS; a physical phone; the debug build; behaviour of `adb backup` itself on the emulator (the manifest flag and package flags were checked, the command was not run); Strix. The release APK is still signed with the public debug key; see `OPERATIONS.md`.

@@ -27,7 +27,7 @@ export function Pill({ children, icon: Icon, onPress, primary, on, danger, disab
   const ink = primary ? M.accentInk : danger ? '#fff' : on ? M.accent : M.ink;
   return <Press onPress={onPress} disabled={disabled} label={label} pressScale={0.97}
     style={[{ minHeight: 38, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 18, borderRadius: 999, borderWidth: 1, borderColor: primary || danger ? 'transparent' : M.line, backgroundColor: primary ? M.ink : danger ? '#d6354f' : M.surface }, style]}
-    pressedStyle={{ backgroundColor: primary ? '#fff' : M.surfaceHover }}>
+    pressedStyle={{ backgroundColor: primary ? M.solid : M.surfaceHover }}>
     {Icon ? <Icon size={16} color={ink} fill={primary && Icon.displayName === 'Play' ? ink : 'none'} /> : null}
     {typeof children === 'string' ? <Txt size={14} weight={700} color={ink}>{children}</Txt> : children}
   </Press>;
@@ -57,7 +57,7 @@ export function MusicSwitch({ on, onChange, label }: { on: boolean; onChange: (v
     if (reduced) slide.setValue(on ? 1 : 0);
     else Animated.spring(slide, { toValue: on ? 1 : 0, ...spring('snappy') }).start();
   }, [on, slide, reduced]);
-  return <Press onPress={() => onChange(!on)} role="switch" checked={on} label={label} style={{ width: 48, height: 28, borderRadius: 99, backgroundColor: on ? M.accent : 'rgba(255, 255, 255, 0.2)' }}>
+  return <Press onPress={() => onChange(!on)} role="switch" checked={on} label={label} style={{ width: 48, height: 28, borderRadius: 99, backgroundColor: on ? M.accent : M.ring }}>
     <Animated.View style={{ position: 'absolute', top: 3, left: 3, width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.4)', transform: [{ translateX: slide.interpolate({ inputRange: [0, 1], outputRange: [0, 20] }) }] }} />
   </Press>;
 }
@@ -80,17 +80,23 @@ export function EmptyNote({ children, hint }: { children: ReactNode; hint?: stri
 
 const initialsOf = (label: string): string => label.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]?.toUpperCase() ?? '').join('');
 
-type CoverProps = { albumId: string; cover: boolean; label: string; radius?: number; style?: StyleProp<ViewStyle>; maxPx?: number };
+/** The picture size of a full-bleed hero, in pixels. */
+const HERO_PX = 1080;
+
+type CoverProps = { albumId: string; cover: boolean; label: string; radius?: number; style?: StyleProp<ViewStyle>; maxPx?: number; /** a full-bleed picture: made large and kept apart from the small copies */ hero?: boolean; /** hide the letters shown while there is no picture */ plain?: boolean };
 
 /** An album cover: the picture from the song files, or a tile whose colour comes from the name, so every album still looks like itself. */
-export function Cover({ albumId, cover, label, radius = 10, style, maxPx = 720 }: CoverProps) {
+export function Cover({ albumId, cover, label, radius = 10, style, maxPx = 720, hero = false, plain = false }: CoverProps) {
   const library = useLibrary();
   const { width } = useWindowDimensions();
   const source = cover ? library.coverSource(albumId) : undefined;
-  const make = useCallback(() => (source ? Wave.artwork(source.uri, 'audio', `cover:${albumId}`, maxPx) : Promise.resolve(null)), [source, albumId, maxPx]);
-  const uri = useArt(source ? `cover:${albumId}` : null, source ? make : null);
+  const px = hero ? HERO_PX : maxPx;
+  // The picture cache is keyed by name alone, so a big picture needs its own name or a small copy made earlier would be reused.
+  const key = hero ? `cover:${albumId}:hero` : `cover:${albumId}`;
+  const make = useCallback(() => (source ? Wave.artwork(source.uri, 'audio', `cover:${albumId}`, px) : Promise.resolve(null)), [source, albumId, px]);
+  const uri = useArt(source ? key : null, source ? make : null);
   const hue = hueFor(label);
-  const showInitials = !cover || uri === null;
+  const showInitials = !plain && (!cover || uri === null);
   return <View style={[{ width: '100%', aspectRatio: 1, borderRadius: radius, overflow: 'hidden', backgroundImage: `linear-gradient(140deg, ${hsl(hue, 55, 38)}, ${hsl(hue + 40, 55, 22)})` }, style]}>
     {uri ? <Image source={{ uri }} style={styles.fill} resizeMode="cover" fadeDuration={150} /> : null}
     {showInitials ? <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}><Txt size={Math.min(34, Math.max(14, width * 0.03))} weight={800} ls={0.04} color="rgba(255, 255, 255, 0.7)">{initialsOf(label)}</Txt></View> : null}

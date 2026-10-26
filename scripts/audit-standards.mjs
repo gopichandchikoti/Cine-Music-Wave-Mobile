@@ -6,6 +6,15 @@
 //
 // Errors are rules that must never be broken (secrets, debug code, open CORS). Warnings are debts to repay. Notices list
 // the design "tells" (AGENTS.md 2.2) that exist in the code: they are information for the owner, not a request to restyle.
+//
+// What it checks (the list AGENTS.md 7.2 requires of this script; a rule that is not listed here needs a test or a review):
+//   errors    tracked secrets, env files, databases and keystores; debug code; eval and raw HTML sinks; type escapes; wildcard CORS;
+//             third-party asset origins; replies that echo a raw error message; trust proxy = true; a Content-Type taken from a
+//             stored object; values for secret names in .env.example; Android backup left on; a failing positive control
+//   warnings  scratch files; long files; unused dependencies; no privacy page; outbound requests without a timeout;
+//             process.env outside config; a JSON body parser without a limit; focused or skipped tests; missing required
+//             documents and .gitignore patterns; Android INTERNET, blocked permissions; native modules that accept file: paths
+//   notices   design tells; security claims in copy to verify; deep-link schemes
 import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
@@ -109,6 +118,21 @@ const secretPatterns = [
   /eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}/g,
   /AIza[0-9A-Za-z_-]{35}/g,
 ]
+// PRC-10: a scan that finds nothing proves nothing until it has found something. Each pattern must match a known sample,
+// built from pieces so that this file holds nothing that looks like a real secret.
+const secretSamples = [
+  `AKIA${'A'.repeat(16)}`,
+  `sk-${'a'.repeat(24)}`,
+  `ghp_${'a'.repeat(30)}`,
+  `xoxb-${'a'.repeat(12)}`,
+  `-----BEGIN ${'PRIVATE'} KEY-----`,
+  `eyJ${'a'.repeat(20)}.${'b'.repeat(20)}.${'c'.repeat(10)}`,
+  `AIza${'a'.repeat(35)}`,
+]
+secretPatterns.forEach((pattern, index) => {
+  if (!secretSamples[index]?.match(pattern))
+    add('error', 'PRC-10', 'A secret pattern does not match its own sample', String(pattern))
+})
 const skipForSecrets = (file) => /(^|\/)(pnpm-lock\.yaml|package-lock\.json)$|REPLICATION|replication_|study-content\//.test(file)
 for (const file of tracked.filter(
   (name) => !skipForSecrets(name) && !/\.(png|jpe?g|webp|woff2?|mp3|mp4|apk|jar|sqlite|zip)$/i.test(name),
@@ -141,6 +165,39 @@ scan(
   (file, line, text) => add('error', 'PERF-25', `Third-party asset origin: ${text}`, `${file}:${line}`),
 )
 
+const serverSources = sources.filter((file) => file.startsWith('server/') || file.startsWith('api/src/'))
+scan(sources, /\.innerHTML\s*=|insertAdjacentHTML\(|document\.write\(/g, (file, line, text) =>
+  add('error', 'SEC-07', `Raw HTML sink: ${text}`, `${file}:${line}`),
+)
+scan(
+  serverSources,
+  /\bjson\([^)\n]*instanceof Error\s*\?\s*\w+\.message|message:\s*String\(\s*(?:error|err)\s*\)/g,
+  (file, line) => add('error', 'SEC-37', 'A reply echoes a raw error message', `${file}:${line}`),
+)
+scan(serverSources, /['"]trust proxy['"]\s*,\s*true/g, (file, line) =>
+  add('error', 'SEC-29', 'trust proxy is true: any client can claim any address', `${file}:${line}`),
+)
+scan(serverSources, /setHeader\(\s*['"]Content-Type['"]\s*,[^)\n]*headers\.get\(\s*['"]content-type['"]\s*\)/gi, (file, line) =>
+  add('error', 'SEC-30', 'Content-Type is taken from a stored or upstream object', `${file}:${line}`),
+)
+for (const file of tracked.filter((name) => /(^|\/)\.env\.example$/.test(name))) {
+  for (const [index, line] of read(file).split('\n').entries()) {
+    const match = /^([A-Z0-9_]*(?:SECRET|PASSWORD|TOKEN|API_KEY|SERVICE_ROLE_KEY|PRIVATE_KEY)[A-Z0-9_]*)=(.+)$/.exec(line.trim())
+    if (match && match[2].trim() !== '')
+      add('error', 'SEC-02', `${match[1]} has a value in the example file`, `${file}:${index + 1}`)
+  }
+}
+const appConfig = (() => {
+  try {
+    return JSON.parse(read('app.json'))
+  } catch {
+    return null
+  }
+})()
+const android = appConfig?.expo?.android
+if (android && android.allowBackup !== false)
+  add('error', 'SEC-49', 'Android backup is not switched off (allowBackup)', 'app.json')
+
 // --- warnings -----------------------------------------------------------------------------------------------------
 for (const file of tracked) {
   if (/(^|\/)\.tmp-|\.log$|(^|\/)(dev|build)\.log$/.test(file)) add('warn', 'SEC-15', 'Scratch or log file is tracked', file)
@@ -169,6 +226,67 @@ for (const file of sources) {
 if (existsSync(path.join(root, 'src')) && !tracked.some((file) => /LegalPage|privacy/i.test(file)))
   add('warn', 'UI-12', 'No privacy or terms page found')
 
+for (const file of serverSources) {
+  const text = read(file)
+  if (/\bfetch\(/.test(text) && !/fetchWithTimeout|AbortSignal\.timeout|AbortController/.test(text))
+    add('warn', 'SEC-42', 'Outbound request without a timeout', `${file}:${lineOf(text, text.search(/\bfetch\(/))}`)
+}
+// Configuration is read in one place; a default parameter such as `env = process.env` is that place being tested, not a read.
+const environmentReaders = /(^|\/)(config|environment)(\/index)?\.ts$/
+for (const file of serverSources.filter((name) => !environmentReaders.test(name))) {
+  for (const [index, text] of read(file).split('\n').entries()) {
+    if (/process\.env/.test(text) && !/=\s*process\.env\b\s*[,)]/.test(text))
+      add('warn', 'ARCH-10', 'process.env is read outside config', `${file}:${index + 1}`)
+  }
+}
+for (const file of serverSources) {
+  for (const [index, text] of read(file).split('\n').entries()) {
+    if (/express\.json\(\s*\)/.test(text) && !text.trim().startsWith('//'))
+      add('warn', 'SEC-41', 'JSON body parser without a size limit', `${file}:${index + 1}`)
+  }
+}
+scan(tracked.filter(isTest), /\b(?:test|it|describe)\.(?:only|skip)\(/g, (file, line) =>
+  add('warn', 'TEST-01', 'A test is focused or skipped', `${file}:${line}`),
+)
+for (const doc of ['README.md', 'system_design.md', 'OPERATIONS.md', 'SECURITY.md', 'SECURITY_VALIDATION.md'])
+  if (!tracked.includes(doc)) add('warn', 'DOC-01', 'Required document is missing', doc)
+if (!tracked.some((file) => /(^|\/)([A-Z_]+_)?VALIDATION\.md$/.test(file)))
+  add('warn', 'DOC-01', 'No validation record (VALIDATION.md)')
+if (serverSources.length > 0 && !tracked.some((file) => /(^|\/)\.env\.example$/.test(file)))
+  add('warn', 'SEC-02', 'The server has no .env.example listing its settings')
+{
+  const ignored = read('.gitignore')
+    .split('\n')
+    .map((line) => line.trim())
+  const required = [
+    '.env',
+    'node_modules',
+    'strix_runs',
+    ...(serverSources.length > 0 ? ['*.sqlite'] : []),
+    ...(android ? ['*.keystore'] : []),
+  ]
+  for (const pattern of required)
+    if (!ignored.some((line) => line.startsWith(pattern)))
+      add('warn', 'GIT-01', `.gitignore does not cover ${pattern}`, '.gitignore')
+}
+if (android) {
+  if ((android.permissions ?? []).some((name) => name.endsWith('INTERNET')))
+    add('warn', 'SEC-49', 'INTERNET is requested explicitly', 'app.json')
+  if (!android.blockedPermissions?.length)
+    add('warn', 'SEC-49', 'No sensitive permissions are blocked (camera, microphone, overlay)', 'app.json')
+  const networkCode = shipped.some((file) => /\bfetch\(|XMLHttpRequest|WebSocket/.test(read(file)))
+  const removesInternet = tracked.some(
+    (file) => file.startsWith('plugins/') && /INTERNET[^\n]*tools:node="remove"/.test(read(file)),
+  )
+  if (!networkCode && !removesInternet)
+    add('warn', 'SEC-49', 'The app has no network code but its release build keeps the INTERNET permission', 'app.json')
+}
+for (const file of tracked.filter((name) => name.endsWith('.kt') && name.startsWith('modules/'))) {
+  const text = read(file)
+  if (/scheme\s*==\s*"file"/.test(text) && !/canonicalFile|canonicalPath/.test(text))
+    add('warn', 'SEC-50', 'A native module accepts file: addresses without confining them to its own folder', file)
+}
+
 // --- notices: design tells that exist in the current, owner-approved design ----------------------------------------------
 const counted = (files, pattern) => files.reduce((total, file) => total + (read(file).match(pattern)?.length ?? 0), 0)
 const report = (id, label, count) => count > 0 && add('notice', id, `${label}: ${count}`)
@@ -194,6 +312,16 @@ report('tell 2', 'Lucide icon imports', counted(sources, /from 'lucide-(react|re
   if (/"lucide-react(-native)?"/.test(manifest)) add('notice', 'tell 2', 'lucide icon package is a dependency')
 }
 if (!tracked.some((file) => /skeleton/i.test(file))) add('notice', 'tell 21', 'No skeleton loading component')
+report(
+  'PRC-11',
+  'security claims in copy to verify against the code (hashed, encrypted, end-to-end)',
+  counted(
+    tracked.filter((file) => file.endsWith('content.model.json')),
+    /\b(hashed|encrypted|end-to-end)\b/gi,
+  ),
+)
+if (appConfig?.expo?.scheme)
+  add('notice', 'SEC-49', `Deep-link scheme "${appConfig.expo.scheme}" is registered: the app must ignore what a link carries`)
 const motion = tracked.some((file) => /motion\.css$|spring/i.test(file))
 if (!motion && existsSync(path.join(root, 'src'))) add('warn', 'UI-20', 'No spring motion tokens (themes/motion.css)')
 

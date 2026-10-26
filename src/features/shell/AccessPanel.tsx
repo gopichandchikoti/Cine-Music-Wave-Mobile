@@ -9,10 +9,10 @@ import { openSettings } from '../../platform/permissions';
 
 type Palette = { ink: string; muted: string; line: string; surface: string; accent: string; accentInk: string };
 
-const palettes: Record<'music' | 'watch', Palette> = {
-  music: { ink: M.ink, muted: M.muted, line: M.line, surface: M.surface, accent: M.ink, accentInk: M.accentInk },
-  watch: { ink: W.ink, muted: W.muted, line: W.line, surface: 'rgba(236, 253, 243, 0.12)', accent: W.accent, accentInk: W.accentInk },
-};
+// Read when drawn, not when loaded: the palettes change with the theme.
+const palettes = (kind: 'music' | 'watch'): Palette => (kind === 'music'
+  ? { ink: M.ink, muted: M.muted, line: M.line, surface: M.surface, accent: M.ink, accentInk: M.accentInk }
+  : { ink: W.ink, muted: W.muted, line: W.line, surface: W.fillSoft, accent: W.accent, accentInk: W.accentInk });
 
 function Action({ icon: Icon, label, onPress, primary, palette, busy }: { icon: ComponentType<{ size?: number; color?: string }>; label: string; onPress: () => void; primary?: boolean; palette: Palette; busy?: boolean }) {
   const ink = primary ? palette.accentInk : palette.ink;
@@ -29,7 +29,7 @@ function Action({ icon: Icon, label, onPress, primary, palette, busy }: { icon: 
  */
 export function AccessNotice({ kind, style }: { kind: 'music' | 'watch'; style?: StyleProp<ViewStyle> }) {
   const library = useLibrary();
-  const palette = palettes[kind];
+  const palette = palettes(kind);
   const { access } = library;
   const shared = kind === 'music' ? access.audio : access.video;
   // Files from the phone's library that were seen before; ones the user picked by hand keep their own access and are not counted.
@@ -49,7 +49,7 @@ export function AccessNotice({ kind, style }: { kind: 'music' | 'watch'; style?:
  */
 export function AccessPanel({ kind }: { kind: 'music' | 'watch' }) {
   const library = useLibrary();
-  const palette = palettes[kind];
+  const palette = palettes(kind);
   const [busy, setBusy] = useState(false);
   const { access, scan } = library;
   const Hero = kind === 'music' ? Music2 : Film;
@@ -67,7 +67,7 @@ export function AccessPanel({ kind }: { kind: 'music' | 'watch' }) {
   if (!library.loaded || (scan.phase === 'listing' && library.records.length === 0)) {
     title = 'Looking at your phone…';
     body = 'Finding the files Android lets this app see.';
-    actions = <Spinner size={28} color={palette.ink} track="rgba(255, 255, 255, 0.2)" />;
+    actions = <Spinner size={28} color={palette.ink} />;
   } else if (access.state === 'denied' || access.state === 'unknown') {
     title = `Allow access to your ${noun}`;
     body = `Cine Music Wave plays what is already on this phone. Android asks first: nothing is read until you allow it, and nothing leaves the device.`;
@@ -85,7 +85,7 @@ export function AccessPanel({ kind }: { kind: 'music' | 'watch' }) {
   } else if (library.records.some((record) => record.kind === (kind === 'music' ? 'audio' : 'video') && !record.missing) || (scan.phase === 'reading' && scan.total > 0)) {
     title = kind === 'music' ? `Reading ${Math.max(0, scan.total - scan.done)} songs…` : 'Getting your library ready…';
     body = 'Tags and covers are being read from the files. They appear here as soon as they are ready.';
-    actions = <Spinner size={28} color={palette.ink} track="rgba(255, 255, 255, 0.2)" />;
+    actions = <Spinner size={28} color={palette.ink} />;
   } else {
     const partialHint = access.state === 'partial' && !access.video && kind === 'watch' ? ' Android is only sharing the videos you selected: allow all videos in Settings for the rest.' : access.state === 'partial' && !access.audio && kind === 'music' ? ' Music access is off: allow it in Settings.' : '';
     title = kind === 'music' ? 'No music yet' : 'Nothing to watch yet';

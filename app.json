@@ -21,6 +21,7 @@
     },
     "android": {
       "package": "com.cinemusicwave.mobile",
+      "allowBackup": false,
       "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#090a10" },
       "permissions": [
         "android.permission.READ_MEDIA_AUDIO",
